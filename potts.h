@@ -1,13 +1,15 @@
 #ifndef POTTS_H
 #define POTTS_H
 
-class POTTS_MODEL{
+#include <mgl2/qt.h>
+
+class POTTS_MODEL : public mglDraw{
 
 	public:
 		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double);
 		~POTTS_MODEL();
 		void SCRAMBLE_GRID();
-		void DRAW_LATTICE();
+		int Draw(mglGraph *gr);
 		void FORCE_ALIGN_GRID();
 		void SET_TARGET(double, double);
 		double ENERGY_CALC();
