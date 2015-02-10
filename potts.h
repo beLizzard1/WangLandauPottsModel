@@ -1,15 +1,15 @@
 #ifndef POTTS_H
 #define POTTS_H
 
-#include <mgl2/qt.h>
+#include <random>
+#include <mgl2/mgl.h>
 
-class POTTS_MODEL : public mglDraw{
-
+class POTTS_MODEL{
 	public:
 		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double);
 		~POTTS_MODEL();
 		void SCRAMBLE_GRID();
-		int Draw(mglGraph *gr);
+		void DRAW();
 		void FORCE_ALIGN_GRID();
 		void SET_TARGET(double, double);
 		double ENERGY_CALC();
@@ -17,15 +17,31 @@ class POTTS_MODEL : public mglDraw{
 		int OUTSIDE_ENERGY_BAND();
 		unsigned int size;
 		unsigned int seed;
+		std::default_random_engine generator;
+		unsigned int **grid;
 	private:
 		unsigned int q;
 		unsigned int o_nearestneighbour;
-		unsigned int **grid;
 		double beta;
 		double coupling;
 		double target_e;
 		double target_width;
 		int NEAREST_NEIGHBOUR(unsigned int, unsigned int);
+		class REGION *regions;
+
 };
+
+class REGION{
+        friend class POTTS_MODEL;
+        public:
+        int state;
+        REGION(class POTTS_MODEL *, unsigned int, unsigned int);
+        ~REGION();
+        unsigned int regionsize;
+        unsigned int **point;
+        private:
+
+};
+
 
 #endif

@@ -21,6 +21,8 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	coupling = 1.0;
 	grid = new unsigned int* [size];
 	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
+	generator.seed(seed);
+	
 	for(unsigned int i = 0; i < size; i++){
 		grid[i] = new unsigned int[size];
 	}
@@ -33,8 +35,7 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 }
 
 void POTTS_MODEL::SCRAMBLE_GRID(){
-	std::default_random_engine generator(seed);
-	std::uniform_int_distribution<int> distribution(1,q);
+	std::uniform_int_distribution<unsigned int> distribution(1,q);
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
 			grid[i][j] = distribution(generator); //Generate a random q value for each lattice point
@@ -44,8 +45,7 @@ void POTTS_MODEL::SCRAMBLE_GRID(){
 
 void POTTS_MODEL::FORCE_ALIGN_GRID(){
 	/* Chooses a random q value and sticks it as the only value on the grid */
-	std::default_random_engine generator(seed);
-	std::uniform_int_distribution<int> distribution(1,q);
+	std::uniform_int_distribution<unsigned int> distribution(1,q);
 	unsigned int r_q = distribution(generator);
 	for(unsigned int j = 0; j< size; j++){
 		for(unsigned int i = 0; i< size; i++){
@@ -54,30 +54,33 @@ void POTTS_MODEL::FORCE_ALIGN_GRID(){
 	}
 }
 
-int POTTS_MODEL::Draw(mglGraph *gr){
-	/* Currently outputs loads of vectors for a gnuplot vector render */
+void POTTS_MODEL::DRAW(){
+	mglGraph gr;
+	/*
 	double angle;
-	double *x, *y;
-
-	x = new double[size * size];
-	y = new double[size * size];
-
+	unsigned int n_ele = size * size;
+	mglData x;
+	mglData y;
+	double *ax,*ay;
+	ax = new double[n_ele];
+	ay = new double[n_ele];
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
 			angle = (2 * M_PI * grid[i][j]) / q;
-			x[j * size + i] = cos(angle);
-			y[j * size + i] = sin(angle);
-			//printf("%lf %lf %lf %lf\n", (double)i,(double)j,x,y);
+			ax[i + (size * j)] = cos(angle);
+			ay[i + (size * j)] = sin(angle);
 		}
 	}
-
-	mglData ax(size*size,x);
-	mglData ay(size*size,y);
-
-	gr->Box();
-	gr->Vect(ax,ay);
-	
-	return(0);
+	x.Set(ax,n_ele,1,1);
+	y.Set(ay,n_ele,1,1);
+	gr.Box();
+	gr.Vect(x,y,"=.");
+	gr.WriteFrame("test.png");
+	*/
+	mglData a(31,41);
+	gr.Fill(a,"-pi*x*exp(-(y+1)^2-4*x^2)");
+	gr.Surf(a,"r","yrange 0 1"); gr.Surf(a,"b","yrange 0 -1");
+	gr.WriteFrame("test.png");
 
 }
 
@@ -88,9 +91,7 @@ double POTTS_MODEL::ENERGY_CALC(){
 			energy += NEAREST_NEIGHBOUR(i,j);
 		}
 	}
-
-	energy *= -1 * coupling;
-
+	energy *= -coupling;
 	return(energy);	
 }
 
@@ -120,32 +121,27 @@ int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
 
 double POTTS_MODEL::SPIN_CHANGE_ENERGY_DIFF(unsigned int i, unsigned int j){
 	unsigned int q_before = grid[i][j];
-
 	double *configuration = new double[q];
-
 	for(unsigned int n = 1; n <= q; n++){
 		grid[i][j] = n;
-		configuration[n-1] = fabs(ENERGY_CALC() - target_e);
+		configuration[n-1] = fabs(target_e - ENERGY_CALC());
 	}
-
 	double smallest = configuration[0];
-	int lowest_conf = 0;
+	unsigned int lowest_conf = 0;
 	for(unsigned int n = 0; n < q; n++){
-		if(smallest > configuration[n]){
+		if(smallest < configuration[n]){
 			smallest = configuration[n];
 			lowest_conf = n;
 		}
 	}
-
 	if(lowest_conf == 0){
 		grid[i][j] = q_before;
 	} else {
 		grid[i][j] = lowest_conf;
 	}
-
+	delete[] configuration;
 	return(ENERGY_CALC());
 }
-
 
 void POTTS_MODEL::SET_TARGET(double t_energy, double t_width){
 	target_e = t_energy;
@@ -165,7 +161,7 @@ int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
 	target_ub = target_e + target_width;
 	double energy = ENERGY_CALC();
 
-	if( energy < target_ub && target_lb > energy ){
+	if( energy <= target_ub && energy >= target_lb ){
 		return(0);
 	}
 	return(1);

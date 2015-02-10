@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-O0 -std=gnu++11 -Wall -ggdb -pedantic 
-LDFLAGS=-lm -lmgl-qt -lmgl -lconfig++
+CFLAGS=-O0 -std=gnu++11 -ggdb -pedantic -Wall -Wextra -Wformat=2 -Wmissing-declarations -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror
+LDFLAGS=-lm -lmgl -lconfig++
 INCLUDES=-I/usr/local/include -I.
 
 BinaryName=potts.app
