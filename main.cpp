@@ -41,20 +41,26 @@ int main(int argc, char **argv) {
 
 	/* telling the class what target it needs to hit and exist inside */
 	potts.SET_TARGET(target_e, target_width);
-
-	std::uniform_int_distribution<unsigned int> distribution(0, dim_grid - 1);
-
-	std::cout << potts.ENERGY_CALC() << std::endl;
 	
+	std::cout << potts.ENERGY_CALC() << std::endl;
 	while(potts.OUTSIDE_ENERGY_BAND()){
-		for(unsigned int j = 0; j < potts.size; j++){
+		for(unsigned int j = 0; j <potts.size; j++){
 			for(unsigned int i = 0; i < potts.size; i++){
 				potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
 				std::cout << potts.ENERGY_CALC() << std::endl;
 			}
 		}
-		//potts.DRAW();
 	}
+
+	std::ofstream lattice;
+	lattice.open ("lattice.lat");
+	for(unsigned int j = 0; j < potts.size; j++){
+		for(unsigned int i = 0; i < potts.size; i++){
+			lattice << potts.grid[i][j] << " ";
+		}
+		lattice << std::endl;
+	}
+	lattice.close();
 
 	return(0);
 }

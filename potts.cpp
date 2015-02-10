@@ -55,8 +55,8 @@ void POTTS_MODEL::FORCE_ALIGN_GRID(){
 }
 
 void POTTS_MODEL::DRAW(){
-	mglGraph gr;
 	/*
+	mglGraph gr;
 	double angle;
 	unsigned int n_ele = size * size;
 	mglData x;
@@ -77,10 +77,6 @@ void POTTS_MODEL::DRAW(){
 	gr.Vect(x,y,"=.");
 	gr.WriteFrame("test.png");
 	*/
-	mglData a(31,41);
-	gr.Fill(a,"-pi*x*exp(-(y+1)^2-4*x^2)");
-	gr.Surf(a,"r","yrange 0 1"); gr.Surf(a,"b","yrange 0 -1");
-	gr.WriteFrame("test.png");
 
 }
 
