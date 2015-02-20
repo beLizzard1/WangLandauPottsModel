@@ -34,7 +34,7 @@ int read_input(std::string file,unsigned int *dim_q, unsigned int *o_nn, unsigne
 
 using namespace libconfig;
 
-int read_input_libconf(std::string file,double *target_e, double *target_width, unsigned int *dim_q, unsigned int *o_nearestneighbour, unsigned int *dim_grid, double *beta){
+int read_input_libconf(std::string file,double *target_e, double *target_width, unsigned int *dim_q, unsigned int *o_nearestneighbour, unsigned int *dim_grid, double *beta, unsigned int *nmeasurements){
 
 	Config cfg;
 
@@ -67,6 +67,16 @@ int read_input_libconf(std::string file,double *target_e, double *target_width, 
 		std::cerr << "Unrecoverable error. Please add this parameter to the config file" << std::endl;
 		return(1);
 	}
+
+	try{
+		*nmeasurements = cfg.lookup("n_measurements");
+	}
+	catch(const SettingNotFoundException &nfex){
+		std::cerr << "No 'n_measurements' setting in the configuration file." << std::endl;
+		std::cerr << "Unrecoverable error. Please add this parameter to the config file" << std::endl;
+		return(1);
+	}
+
 
 	/* All parameters after this one can use defaults */
 

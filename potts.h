@@ -6,7 +6,7 @@
 
 class POTTS_MODEL{
 	public:
-		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double);
+		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double,unsigned int);
 		~POTTS_MODEL();
 		void SCRAMBLE_GRID();
 		void DRAW();
@@ -19,6 +19,11 @@ class POTTS_MODEL{
 		unsigned int seed;
 		std::default_random_engine generator;
 		unsigned int **grid;
+		double *energy;
+		double *magnetisation;
+		unsigned int nmeasurements;
+		void DO_MEASUREMENTS(unsigned int);
+		void DO_UPDATE();
 	private:
 		unsigned int q;
 		unsigned int o_nearestneighbour;

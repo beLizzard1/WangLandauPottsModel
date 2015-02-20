@@ -13,7 +13,7 @@
 #include <mgl2/qt.h>
 #include "potts.h"
 
-POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b){
+POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas){
 	q = dim_q;
 	size = dim_grid;
 	o_nearestneighbour = o_nn;
@@ -22,7 +22,12 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	grid = new unsigned int* [size];
 	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
 	generator.seed(seed);
-	
+
+	nmeasurements = nmeas;
+	energy = new double[nmeasurements];
+	magnetisation = new double[nmeasurements];
+
+
 	for(unsigned int i = 0; i < size; i++){
 		grid[i] = new unsigned int[size];
 	}
@@ -56,27 +61,27 @@ void POTTS_MODEL::FORCE_ALIGN_GRID(){
 
 void POTTS_MODEL::DRAW(){
 	/*
-	mglGraph gr;
-	double angle;
-	unsigned int n_ele = size * size;
-	mglData x;
-	mglData y;
-	double *ax,*ay;
-	ax = new double[n_ele];
-	ay = new double[n_ele];
-	for(unsigned int j = 0; j < size; j++){
-		for(unsigned int i = 0; i < size; i++){
-			angle = (2 * M_PI * grid[i][j]) / q;
-			ax[i + (size * j)] = cos(angle);
-			ay[i + (size * j)] = sin(angle);
-		}
-	}
-	x.Set(ax,n_ele,1,1);
-	y.Set(ay,n_ele,1,1);
-	gr.Box();
-	gr.Vect(x,y,"=.");
-	gr.WriteFrame("test.png");
-	*/
+	   mglGraph gr;
+	   double angle;
+	   unsigned int n_ele = size * size;
+	   mglData x;
+	   mglData y;
+	   double *ax,*ay;
+	   ax = new double[n_ele];
+	   ay = new double[n_ele];
+	   for(unsigned int j = 0; j < size; j++){
+	   for(unsigned int i = 0; i < size; i++){
+	   angle = (2 * M_PI * grid[i][j]) / q;
+	   ax[i + (size * j)] = cos(angle);
+	   ay[i + (size * j)] = sin(angle);
+	   }
+	   }
+	   x.Set(ax,n_ele,1,1);
+	   y.Set(ay,n_ele,1,1);
+	   gr.Box();
+	   gr.Vect(x,y,"=.");
+	   gr.WriteFrame("test.png");
+	   */
 
 }
 
@@ -115,6 +120,29 @@ int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
 	return(counter);
 }
 
+void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k){
+	energy[k] = 0.0;
+	magnetisation[k] = 0.0;
+
+	for(unsigned int j = 0; j < size; j++){
+		for(unsigned int i = 0; i < size; i++){
+			magnetisation[k] += grid[i][j];
+		}
+	}
+	
+	/* Going to use preexisting energy calculation function to do the measurements */
+	energy[k] = ENERGY_CALC();
+
+	/* Now to divide by volume */
+	energy[k] /= (size * size);
+	magnetisation[k] = fabs(magnetisation[k]) / (size * size);
+}
+
+void POTTS_MODEL::DO_UPDATE(){
+
+}
+
+
 double POTTS_MODEL::SPIN_CHANGE_ENERGY_DIFF(unsigned int i, unsigned int j){
 	unsigned int q_before = grid[i][j];
 	double *configuration = new double[q];
@@ -149,6 +177,9 @@ POTTS_MODEL::~POTTS_MODEL(){
 		delete[] grid[i];
 	}
 	delete[] grid;
+
+	delete[] energy;
+	delete[] magnetisation;
 }
 
 int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
