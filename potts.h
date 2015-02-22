@@ -4,6 +4,8 @@
 #include <random>
 #include <mgl2/mgl.h>
 
+enum UPDATE_ALG { METROPOLIS, WANGLANDAU };
+
 class POTTS_MODEL{
 	public:
 		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double,unsigned int);
@@ -19,11 +21,20 @@ class POTTS_MODEL{
 		unsigned int seed;
 		std::default_random_engine generator;
 		unsigned int **grid;
+		unsigned int numbins = 100;
+
 		double *energy;
+		double energy_avg;
+		double energy_err;
+
 		double *magnetisation;
+		double magnetisation_avg;
+		double magnetisation_err;
+
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int);
-		void DO_UPDATE();
+		void DO_UPDATE(UPDATE_ALG);
+		void ERROR_CALC();
 	private:
 		unsigned int q;
 		unsigned int o_nearestneighbour;
@@ -33,18 +44,6 @@ class POTTS_MODEL{
 		double target_width;
 		int NEAREST_NEIGHBOUR(unsigned int, unsigned int);
 		class REGION *regions;
-
-};
-
-class REGION{
-        friend class POTTS_MODEL;
-        public:
-        int state;
-        REGION(class POTTS_MODEL *, unsigned int, unsigned int);
-        ~REGION();
-        unsigned int regionsize;
-        unsigned int **point;
-        private:
 
 };
 
