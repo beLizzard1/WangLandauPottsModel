@@ -81,17 +81,24 @@ int main(int argc, char **argv) {
 		potts.DO_MEASUREMENTS(i);
 	}
 
-	//std::cout << potts.acceptance << " acceptance" << std::endl;
+	std::cout << beta << " " << (double)potts.acceptance/(double)potts.nmeasurements << std::endl;
 
 	potts.ERROR_CALC();
 	//std::cout << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
-	std::cout << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
+	//std::cout << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
 	//std::cout << "Magnetisation: " << potts.magnetisation_avg << "\u00B1" << potts.magnetisation_err << std::endl;
 
+	std::ofstream energy;
+	energy.open("energy.dat");
+	energy << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
+	energy.close();
 
+	std::ofstream magnetisation;
+	magnetisation.open("magnetisation.dat");
+	magnetisation << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
+	magnetisation.close();
 
-
-	
+	/*
 	std::ofstream lattice;
 	lattice.open ("lattice.lat");
 	for(unsigned int j = 0; j < potts.size; j++){
@@ -101,7 +108,7 @@ int main(int argc, char **argv) {
 		lattice << std::endl;
 	}
 	lattice.close();
-
+	*/
 
 	return(0);
 }

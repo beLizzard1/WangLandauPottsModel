@@ -22,6 +22,8 @@ class POTTS_MODEL{
 		std::default_random_engine generator;
 		unsigned int **grid;
 		unsigned int numbins = 100;
+		
+		double *values; 
 
 		double *energy;
 		double energy_avg;

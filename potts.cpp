@@ -8,6 +8,7 @@
 #include <string>
 #include <random>
 #include <cmath>
+#include <complex>
 #include <cstdlib>
 #include <mgl2/mgl.h>
 //#include <mgl2/qt.h>
@@ -19,7 +20,6 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	o_nearestneighbour = o_nn;
 	beta = b;
 	coupling = 1.0;
-	grid = new unsigned int* [size];
 	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
 	generator.seed(seed);
 
@@ -27,7 +27,7 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	energy = new double[nmeasurements];
 	magnetisation = new double[nmeasurements];
 
-
+	grid = new unsigned int*[size];
 	for(unsigned int i = 0; i < size; i++){
 		grid[i] = new unsigned int[size];
 	}
@@ -37,6 +37,13 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 			grid[i][j] = 0;
 		}
 	}
+
+	values = new double[q];
+	for(unsigned int i = 0; i < q; i++){
+		values[i] = (2 * M_PI * (i+1)) / q;
+	}
+
+
 }
 
 void POTTS_MODEL::SCRAMBLE_GRID(){
@@ -86,13 +93,17 @@ void POTTS_MODEL::DRAW(){
 }
 
 double POTTS_MODEL::ENERGY_CALC(){
-	double energy = 0.0;
+
+	double energy = 0;
+
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
-			energy += NEAREST_NEIGHBOUR(i,j);
+			//energy += NEAREST_NEIGHBOUR(i,j);
+			energy += (1 + cos(values[grid[i][j]-1] * cos(values[grid[(i+1)%size][j]-1]))/2);
+			energy += (1 + cos(values[grid[i][j]-1] * cos(values[grid[i][(j+1)%size]-1]))/2);
 		}
 	}
-	//energy *= -beta;
+	energy *= -beta;
 	return(energy);	
 }
 
@@ -125,7 +136,7 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k){
 	magnetisation[k] = 0.0;
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
-			magnetisation[k] += grid[i][j];
+			magnetisation[k] += cos(values[grid[i][j] - 1]);
 		}
 	}
 	/* Going to use preexisting energy calculation function to do the measurements */
@@ -158,7 +169,7 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 					std::uniform_real_distribution<double> pdistribution(0,1);
 					rand = pdistribution(generator);
-				
+
 					double delta = H_old - H_new;
 
 					if (delta <= 0){
@@ -281,8 +292,11 @@ POTTS_MODEL::~POTTS_MODEL(){
 	}
 	delete[] grid;
 
+	delete[] values;
+
 	delete[] energy;
 	delete[] magnetisation;
+
 }
 
 int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
