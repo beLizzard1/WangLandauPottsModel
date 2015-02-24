@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <mgl2/mgl.h>
-#include <mgl2/qt.h>
+//#include <mgl2/qt.h>
 #include "potts.h"
 
 POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas){
@@ -92,28 +92,28 @@ double POTTS_MODEL::ENERGY_CALC(){
 			energy += NEAREST_NEIGHBOUR(i,j);
 		}
 	}
-	energy *= -beta;
+	//energy *= -beta;
 	return(energy);	
 }
 
 int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
-	/* Regular Lattice with a fixed size need to do periodic boundary conditions */
-	/* modulo operator should be fine for those terms */
+	// Regular Lattice with a fixed size need to do periodic boundary conditions
+	// modulo operator should be fine for those terms
 	double counter = 0.0;
 	if(o_nearestneighbour == 0){
 		return(0);
 	} else {
-		/* Doesn't actually get the nearest neighbours because it misses the diagonal :( might improve this at some point */
-		/* Looks to the nearest neighbours to the right */
+		// Doesn't actually get the nearest neighbours because it misses the diagonal :( might improve this at some point     
+		// Looks to the nearest neighbours to the right
 		for(unsigned int n = 1; n <= o_nearestneighbour; n++){
 			if( (grid[i][j] == grid[(i+n)%size][j]) ){
-				counter += 1/n;
+				counter ++;
 			}
 		}
-		/* Looks to the nearest neighbours to the left */
+		// Looks to the nearest neighbours below
 		for(unsigned int n = 1; n <= o_nearestneighbour; n++){
 			if( (grid[i][j] == grid[i][(j+n)%size]) ){
-				counter += 1/n;
+				counter ++;
 			}
 		}
 	}
@@ -123,7 +123,6 @@ int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
 void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k){
 	energy[k] = 0.0;
 	magnetisation[k] = 0.0;
-
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
 			magnetisation[k] += grid[i][j];
@@ -148,6 +147,7 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 					old_q = grid[x][y];
 
 					std::uniform_int_distribution<unsigned int> qdistribution(1,q);
+
 					new_q = qdistribution(generator);
 
 					H_old = ENERGY_CALC();
@@ -158,13 +158,18 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 					std::uniform_real_distribution<double> pdistribution(0,1);
 					rand = pdistribution(generator);
+				
+					double delta = H_old - H_new;
 
-					if( exp(beta * (H_new - H_old)) > 1 ){
+					if (delta <= 0){
 						grid[x][y] = new_q;
-					} else {
-						if(rand < exp(beta * (H_new - H_old))){
+						acceptance++;
+					}
+					if (delta > 0){
+						if(exp(-1 * beta * delta) >= rand){
 							grid[x][y] = new_q;
-						} else {
+							acceptance++;
+						} else{
 							grid[x][y] = old_q;
 						}
 					}

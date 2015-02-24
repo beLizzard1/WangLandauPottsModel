@@ -67,19 +67,25 @@ int main(int argc, char **argv) {
 	ALG = METROPOLIS;
 
 	/* Do some thermalisation */
-	for(unsigned int i = 0; i < 10000; i++){
+	for(unsigned int i = 0; i < 100; i++){
 		potts.DO_UPDATE(ALG);
 	}
 
 	/* At this point, because we aren't doing typical monte carlo we were taught before we can assume we are thermalised */
 
+	/* Reset acceptance to 0*/
+	potts.acceptance = 0;
+
 	for(unsigned int i = 0; i < potts.nmeasurements; i++){
-		potts.DO_MEASUREMENTS(i);
 		potts.DO_UPDATE(ALG);
+		potts.DO_MEASUREMENTS(i);
 	}
 
+	//std::cout << potts.acceptance << " acceptance" << std::endl;
+
 	potts.ERROR_CALC();
-	std::cout << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
+	//std::cout << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
+	std::cout << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
 	//std::cout << "Magnetisation: " << potts.magnetisation_avg << "\u00B1" << potts.magnetisation_err << std::endl;
 
 

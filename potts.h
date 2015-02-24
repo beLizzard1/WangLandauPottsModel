@@ -31,6 +31,7 @@ class POTTS_MODEL{
 		double magnetisation_avg;
 		double magnetisation_err;
 
+		unsigned int acceptance;
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int);
 		void DO_UPDATE(UPDATE_ALG);
