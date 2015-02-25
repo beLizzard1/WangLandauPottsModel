@@ -29,12 +29,12 @@ int main(int argc, char **argv) {
 		return(1);
 	}
 	/*
-	if ( dim_q == 2){
-		std::cout << "Potts q="<<dim_q<<" (Ising) Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
-	} else {
-		std::cout << "Potts q="<<dim_q<<" Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
-	}
-	*/
+	   if ( dim_q == 2){
+	   std::cout << "Potts q="<<dim_q<<" (Ising) Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
+	   } else {
+	   std::cout << "Potts q="<<dim_q<<" Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
+	   }
+	   */
 	target_e *= beta;
 
 	/* Now initialising the class */
@@ -50,15 +50,15 @@ int main(int argc, char **argv) {
 	 * This section of main attempts to force the lattice into a configuration that matches the target energy
 	 * because we started out with a metropolois algorithm this isn't needed yet
 	 *
+	 std::cout << potts.ENERGY_CALC() << std::endl;
+	 while(potts.OUTSIDE_ENERGY_BAND()){
+	 for(unsigned int j = 0; j <potts.size; j++){
+	 for(unsigned int i = 0; i < potts.size; i++){
+	 potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
+	//std::cout.width(2);
 	std::cout << potts.ENERGY_CALC() << std::endl;
-	while(potts.OUTSIDE_ENERGY_BAND()){
-		for(unsigned int j = 0; j <potts.size; j++){
-			for(unsigned int i = 0; i < potts.size; i++){
-				potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
-				//std::cout.width(2);
-				std::cout << potts.ENERGY_CALC() << std::endl;
-			}
-		}
+	}
+	}
 	}
 	*/
 
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 	ALG = METROPOLIS;
 
 	/* Do some thermalisation */
-	for(unsigned int i = 0; i < 100; i++){
+	for(unsigned int i = 0; i < 10000; i++){
 		potts.DO_UPDATE(ALG);
 	}
 
@@ -84,9 +84,16 @@ int main(int argc, char **argv) {
 	std::cout << beta << " " << (double)potts.acceptance/(double)potts.nmeasurements << std::endl;
 
 	potts.ERROR_CALC();
-	//std::cout << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
-	//std::cout << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
-	//std::cout << "Magnetisation: " << potts.magnetisation_avg << "\u00B1" << potts.magnetisation_err << std::endl;
+
+	std::ofstream specificheat;
+	specificheat.open("specificheat.dat");
+	specificheat << beta << " " << potts.specificheat_avg << " " << potts.specificheat_err << std::endl;
+	specificheat.close();
+
+	std::ofstream susceptibility;
+	susceptibility.open("susceptibility.dat");
+	susceptibility << beta << " " << potts.susceptibility_avg << " " << potts.susceptibility_err << std::endl;
+	susceptibility.close();
 
 	std::ofstream energy;
 	energy.open("energy.dat");
@@ -99,16 +106,16 @@ int main(int argc, char **argv) {
 	magnetisation.close();
 
 	/*
-	std::ofstream lattice;
-	lattice.open ("lattice.lat");
-	for(unsigned int j = 0; j < potts.size; j++){
-		for(unsigned int i = 0; i < potts.size; i++){
-			lattice << potts.grid[i][j] << " ";
-		}
-		lattice << std::endl;
-	}
-	lattice.close();
-	*/
+	   std::ofstream lattice;
+	   lattice.open ("lattice.lat");
+	   for(unsigned int j = 0; j < potts.size; j++){
+	   for(unsigned int i = 0; i < potts.size; i++){
+	   lattice << potts.grid[i][j] << " ";
+	   }
+	   lattice << std::endl;
+	   }
+	   lattice.close();
+	   */
 
 	return(0);
 }

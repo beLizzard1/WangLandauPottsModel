@@ -33,6 +33,14 @@ class POTTS_MODEL{
 		double magnetisation_avg;
 		double magnetisation_err;
 
+		double *susceptibility;
+		double susceptibility_avg;
+		double susceptibility_err;
+
+		double *specificheat;
+		double specificheat_avg;
+		double specificheat_err;
+
 		unsigned int acceptance;
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);

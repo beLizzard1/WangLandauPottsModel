@@ -1,5 +1,5 @@
 set terminal pngcairo size 700,524 enhanced font 'Verdana,10'
-set output "Acceptance.png"
+set output "acceptance.png"
 set title "Acceptance vs Beta"
 set autoscale
 set ylabel "Acceptance"
