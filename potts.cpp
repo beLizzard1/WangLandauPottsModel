@@ -131,19 +131,34 @@ int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
 	return(counter);
 }
 
-void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k){
-	energy[k] = 0.0;
-	magnetisation[k] = 0.0;
-	for(unsigned int j = 0; j < size; j++){
-		for(unsigned int i = 0; i < size; i++){
-			magnetisation[k] += cos(values[grid[i][j] - 1]);
-		}
+void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
+	switch(TYPE){
+		case METROPOLIS:{
+
+					energy[k] = 0.0;
+					magnetisation[k] = 0.0;
+					for(unsigned int j = 0; j < size; j++){
+						for(unsigned int i = 0; i < size; i++){
+							magnetisation[k] += cos(values[grid[i][j] - 1]);
+						}
+					}
+					/* Going to use preexisting energy calculation function to do the measurements */
+					energy[k] = ENERGY_CALC();
+					/* Now to divide by volume */
+					energy[k] /= (size * size);
+					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
+					break;
+				}
+		case WANGLANDAU:{
+
+				}
+		default:{
+				std::cout << "You should never be seeing this unless you've dun goof!" << std::endl;
+				break;
+			}
 	}
-	/* Going to use preexisting energy calculation function to do the measurements */
-	energy[k] = ENERGY_CALC();
-	/* Now to divide by volume */
-	energy[k] /= (size * size);
-	magnetisation[k] = fabs(magnetisation[k]) / (size * size);
+
+
 }
 
 void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
@@ -187,9 +202,48 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 					break;
 				}
-		case WANGLANDAU:
-				std::cout << "Not yet programmed" << std::endl;
-				break;
+		case WANGLANDAU:{
+					std::uniform_int_distribution<unsigned int> distribution(0,size-1);
+					x = distribution(generator);
+					y = distribution(generator);
+
+					old_q = grid[x][y];
+
+					H_old = ENERGY_CALC();
+
+					std::uniform_int_distribution<unsigned int> qdistribution(1,q);
+
+					new_q = qdistribution(generator);
+
+					grid[x][y] = new_q;					
+
+					H_new = ENERGY_CALC();
+					if( OUTSIDE_ENERGY_BAND() == 1 ){
+						grid[x][y] = old_q;
+						break;
+					} else {
+
+						std::uniform_real_distribution<double> pdistribution(0,1);
+						rand = pdistribution(generator);
+
+						double delta = H_old - H_new;
+
+						if (delta <= 0){
+							grid[x][y] = new_q;
+							acceptance++;
+						}
+						if (delta > 0){
+							if(exp(-1 * beta * delta) >= rand){
+								grid[x][y] = new_q;
+								acceptance++;
+							} else{
+								grid[x][y] = old_q;
+							}
+						}
+
+					}
+					break;					
+				}
 		default:
 				std::cout << "Not needed really" << std::endl;
 				break;

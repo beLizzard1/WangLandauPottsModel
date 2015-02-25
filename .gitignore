@@ -33,3 +33,6 @@
 *.lat
 
 # Folders
+betatest/0.*
+betatest/1.*
+betatest/2.00

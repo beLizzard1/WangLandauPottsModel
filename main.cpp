@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 
 	for(unsigned int i = 0; i < potts.nmeasurements; i++){
 		potts.DO_UPDATE(ALG);
-		potts.DO_MEASUREMENTS(i);
+		potts.DO_MEASUREMENTS(i,ALG);
 	}
 
 	std::cout << beta << " " << (double)potts.acceptance/(double)potts.nmeasurements << std::endl;

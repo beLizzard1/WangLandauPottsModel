@@ -35,7 +35,7 @@ class POTTS_MODEL{
 
 		unsigned int acceptance;
 		unsigned int nmeasurements;
-		void DO_MEASUREMENTS(unsigned int);
+		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);
 		void DO_UPDATE(UPDATE_ALG);
 		void ERROR_CALC();
 	private:
