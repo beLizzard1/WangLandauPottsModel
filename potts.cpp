@@ -149,10 +149,6 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 					/* Now to divide by volume */
 					energy[k] /= (size * size);
 					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
-
-					susceptibility[k] = magnetisation[k] * magnetisation[k];
-					specificheat[k] = energy[k] * energy[k];
-
 					break;
 				}
 		case WANGLANDAU:{
@@ -256,7 +252,6 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 	}
 }
 
-
 void POTTS_MODEL::ERROR_CALC(){
 	double *bin, *jackbins;
 	bin = new double[numbins];
@@ -315,67 +310,40 @@ void POTTS_MODEL::ERROR_CALC(){
 	}
 	magnetisation_err *= (numbins - 1.0) / (double)numbins;
 	magnetisation_err = sqrt(magnetisation_err);
+}
 
 
-	// Now do the thermodynamic properties like specific heat and susceptibility
-	for(unsigned int k = 0; k < nmeasurements; k++){
-		susceptibility[k] -= (magnetisation_avg * magnetisation_avg);
-		specificheat[k] -= (energy_avg * energy_avg);
-		susceptibility[k] *= beta;
-		specificheat[k] *= beta;
+double POTTS_MODEL::JACK_KNIFE(double *observed, double avg){
+	unsigned int numbins = 10;
+	unsigned int slice = nmeasurements / numbins;
+	double sumbins = 0;
+	double *bin;
+	bin = new double[numbins];
+
+	for(unsigned int l = 0; l < numbins; l++){
+		bin[l] = 0.0;
+		for(unsigned int k = 0; k < slice; k++){
+			bin[l] += observed[l*slice + k];
+		}
+		bin[l] /= slice;
+		sumbins += bin[l];
 	}
 	
-	for(unsigned int k = 0; k < nmeasurements; k++){
-		susceptibility_avg += susceptibility[k];
-		specificheat_avg += specificheat[k];
+	double *jackbins;
+	jackbins = new double[numbins];
+	// Form the jack knife bins
+	for(unsigned int l = 0; l < numbins; l++){
+		jackbins[l] = (sumbins - bin[l])/(numbins - 1);
 	}
-	susceptibility_avg /= nmeasurements;
-	specificheat_avg /= nmeasurements;
-
-
-	// Susceptibility First
-        sumbins = 0.0;
-        for(unsigned int l = 0; l < numbins; l++){
-                bin[l] = 0.0;
-                for( unsigned int k = 0; k < slice; k++){
-                        bin[l] += susceptibility[l * slice + k];
-                }
-                bin[l] /= slice;
-                sumbins += bin[l];
-        }
-        // Forming the bins
-        for(unsigned int l = 0; l < numbins; l++){
-                jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
-        }
-
-        susceptibility_err = 0.0;
-        for(unsigned int l = 0; l < numbins; l++){
-                susceptibility_err += (susceptibility_avg - jackbins[l]) * (susceptibility_avg - jackbins[l]);
-        }
-        susceptibility_err *= (numbins - 1.0) / (double)numbins;
-        susceptibility_err = sqrt(susceptibility_err);
-
-        // Now Specific heat
-        sumbins = 0.0;
-        for(unsigned int l = 0; l < numbins; l++){
-                bin[l] = 0.0;
-                for( unsigned int k = 0; k < slice; k++){
-                        bin[l] += specificheat[l * slice + k];
-                }
-                bin[l] /= slice;
-                sumbins += bin[l];
-        }
-        // Forming the bins
-        for(unsigned int l = 0; l < numbins; l++){
-                jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
-        }
-
-       	specificheat_err = 0.0;
-        for(unsigned int l = 0; l < numbins; l++){
-                specificheat_err += (specificheat_avg - jackbins[l]) * (specificheat_avg - jackbins[l]);
-        }
-        specificheat_err *= (numbins - 1.0) / (double)numbins;
-        specificheat_err = sqrt(specificheat_err);
+	
+	// Compute the Error
+	double error = 0;
+	for(unsigned int l = 0; l < numbins; l++){
+		error += (avg - jackbins[l]) * (avg - jackbins[l]);
+	}
+	error *= ((double)(numbins - 1))/(double)numbins;
+	error = sqrt(error);
+	return(error);
 
 }
 

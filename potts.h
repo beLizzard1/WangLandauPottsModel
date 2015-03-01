@@ -46,6 +46,7 @@ class POTTS_MODEL{
 		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);
 		void DO_UPDATE(UPDATE_ALG);
 		void ERROR_CALC();
+		double JACK_KNIFE(double*, double);
 	private:
 		unsigned int q;
 		unsigned int o_nearestneighbour;

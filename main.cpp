@@ -28,14 +28,6 @@ int main(int argc, char **argv) {
 		std::cout << "Error parsing input" << std::endl;
 		return(1);
 	}
-	/*
-	   if ( dim_q == 2){
-	   std::cout << "Potts q="<<dim_q<<" (Ising) Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
-	   } else {
-	   std::cout << "Potts q="<<dim_q<<" Model on a "<<dim_grid<<"x"<<dim_grid<<" lattice" << std::endl;
-	   }
-	   */
-	target_e *= beta;
 
 	/* Now initialising the class */
 	POTTS_MODEL potts(dim_q,o_nn,dim_grid,beta,nmeasurements);
@@ -67,7 +59,7 @@ int main(int argc, char **argv) {
 	ALG = METROPOLIS;
 
 	/* Do some thermalisation */
-	for(unsigned int i = 0; i < 10000; i++){
+	for(unsigned int i = 0; i < 1000; i++){
 		potts.DO_UPDATE(ALG);
 	}
 
@@ -81,19 +73,9 @@ int main(int argc, char **argv) {
 		potts.DO_MEASUREMENTS(i,ALG);
 	}
 
-	std::cout << beta << " " << (double)potts.acceptance/(double)potts.nmeasurements << std::endl;
-
 	potts.ERROR_CALC();
 
-	std::ofstream specificheat;
-	specificheat.open("specificheat.dat");
-	specificheat << beta << " " << potts.specificheat_avg << " " << potts.specificheat_err << std::endl;
-	specificheat.close();
-
-	std::ofstream susceptibility;
-	susceptibility.open("susceptibility.dat");
-	susceptibility << beta << " " << potts.susceptibility_avg << " " << potts.susceptibility_err << std::endl;
-	susceptibility.close();
+	//std::cout << beta << " " << potts.acceptance / potts.nmeasurements << std::endl;
 
 	std::ofstream energy;
 	energy.open("energy.dat");
