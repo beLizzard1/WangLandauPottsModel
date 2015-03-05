@@ -41,6 +41,8 @@ class POTTS_MODEL{
 		double specificheat_avg;
 		double specificheat_err;
 
+		double aguess;
+
 		unsigned int acceptance;
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);

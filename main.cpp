@@ -23,8 +23,10 @@ int main(int argc, char **argv) {
 	unsigned int o_nn;
 	unsigned int dim_grid;
 	unsigned int nmeasurements;
-	double beta, target_e, target_width;
-	if ( read_input_libconf(filename,&target_e, &target_width, &dim_q, &o_nn, &dim_grid, &beta, &nmeasurements) != 0 ){
+	double beta, target_e, target_width, aguess;
+	bool wanglandau;
+
+	if ( read_input_libconf(filename,&target_e, &target_width, &dim_q, &o_nn, &dim_grid, &beta, &nmeasurements, &aguess, &wanglandau) != 0 ){
 		std::cout << "Error parsing input" << std::endl;
 		return(1);
 	}
@@ -38,44 +40,49 @@ int main(int argc, char **argv) {
 	/* telling the class what target it needs to hit and exist inside */
 	potts.SET_TARGET(target_e, target_width);
 
-	/*
-	 * This section of main attempts to force the lattice into a configuration that matches the target energy
-	 * because we started out with a metropolois algorithm this isn't needed yet
-	 *
-	 std::cout << potts.ENERGY_CALC() << std::endl;
-	 while(potts.OUTSIDE_ENERGY_BAND()){
-	 for(unsigned int j = 0; j <potts.size; j++){
-	 for(unsigned int i = 0; i < potts.size; i++){
-	 potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
-	//std::cout.width(2);
-	std::cout << potts.ENERGY_CALC() << std::endl;
-	}
-	}
-	}
-	*/
-
-	/* Add a variable that tells DO_UPDATE what type of update algorithm to use */
+	// Add a variable that tells DO_UPDATE what type of update algorithm to use
 	UPDATE_ALG ALG;
-	ALG = METROPOLIS;
+	
+	if(wanglandau == true){
+		ALG = WANGLANDAU;
+	} else {
+		ALG = METROPOLIS;
+	}
 
-	/* Do some thermalisation */
-	for(unsigned int i = 0; i < 1000; i++){
+	// Force lattice into configuration that we want
+	// Kinda like a random heat bath to drive energy to target
+	while(potts.OUTSIDE_ENERGY_BAND() && ALG == WANGLANDAU){
+		for(unsigned int j = 0; j < potts.size; j++){
+			for(unsigned int i = 0; i < potts.size; i++){
+				potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
+				//std::cout << potts.ENERGY_CALC() / (potts.size * potts.size) << std::endl;
+			}
+		}
+	}
+
+
+
+	// Do some thermalisation
+	for(unsigned int i = 0; i < 100; i++){
 		potts.DO_UPDATE(ALG);
 	}
-
-	/* At this point, because we aren't doing typical monte carlo we were taught before we can assume we are thermalised */
-
+	
 	/* Reset acceptance to 0*/
 	potts.acceptance = 0;
 
 	for(unsigned int i = 0; i < potts.nmeasurements; i++){
 		potts.DO_UPDATE(ALG);
 		potts.DO_MEASUREMENTS(i,ALG);
+		aguessf << potts.aguess << std::endl;
 	}
 
 	potts.ERROR_CALC();
 
-	//std::cout << beta << " " << potts.acceptance / potts.nmeasurements << std::endl;
+
+	std::ofstream acceptance;
+	acceptance.open("acceptance.dat");
+	acceptance << beta << " " << (double)potts.acceptance / (double)potts.nmeasurements << std::endl;
+	acceptance.close();
 
 	std::ofstream energy;
 	energy.open("energy.dat");
@@ -87,17 +94,15 @@ int main(int argc, char **argv) {
 	magnetisation << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
 	magnetisation.close();
 
-	/*
-	   std::ofstream lattice;
-	   lattice.open ("lattice.lat");
-	   for(unsigned int j = 0; j < potts.size; j++){
-	   for(unsigned int i = 0; i < potts.size; i++){
-	   lattice << potts.grid[i][j] << " ";
-	   }
-	   lattice << std::endl;
-	   }
-	   lattice.close();
-	   */
+	//std::ofstream lattice;
+	//lattice.open ("lattice.lat");
+	//for(unsigned int j = 0; j < potts.size; j++){
+	//	for(unsigned int i = 0; i < potts.size; i++){
+	//		lattice << potts.grid[i][j] << " ";
+	//	}
+	//	lattice << std::endl;
+	//}
+	//lattice.close();
 
 	return(0);
 }

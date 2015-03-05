@@ -34,7 +34,7 @@ int read_input(std::string file,unsigned int *dim_q, unsigned int *o_nn, unsigne
 
 using namespace libconfig;
 
-int read_input_libconf(std::string file,double *target_e, double *target_width, unsigned int *dim_q, unsigned int *o_nearestneighbour, unsigned int *dim_grid, double *beta, unsigned int *nmeasurements){
+int read_input_libconf(std::string file,double *target_e, double *target_width, unsigned int *dim_q, unsigned int *o_nearestneighbour, unsigned int *dim_grid, double *beta, unsigned int *nmeasurements, double *aguess, bool *wanglandau){
 
 	Config cfg;
 
@@ -77,6 +77,13 @@ int read_input_libconf(std::string file,double *target_e, double *target_width, 
 		return(1);
 	}
 
+	try{
+		*wanglandau = cfg.lookup("wanglandau");
+	}
+	catch(const SettingNotFoundException &nfex){
+		std::cerr << "No 'wanglandau' parameter found" << std::endl;
+		std::cerr << "Unrecoverable error. Add it to the config file" << std::endl;
+	}
 
 	/* All parameters after this one can use defaults */
 
@@ -115,8 +122,17 @@ int read_input_libconf(std::string file,double *target_e, double *target_width, 
 		std::cerr << "Using default" << std::endl;
 		*beta = 0.5;
 	}
+	
+	try{
+		*aguess = cfg.lookup("aguess");
+	}
+	catch(const SettingNotFoundException &nfex){
+		std::cerr << "No 'aguess' setting in the configuration file." << std::endl;
+		std::cerr << "Using default" << std::endl;
+		*aguess = 3.0;
+	}
+
 
 	return(0);
-
 }
 

@@ -42,9 +42,8 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 
 	values = new double[q];
 	for(unsigned int i = 0; i < q; i++){
-		values[i] = (2 * M_PI * (i+1)) / q;
+		values[i] = (2 * M_PI * (i)) / q;
 	}
-
 
 }
 
@@ -152,7 +151,20 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 					break;
 				}
 		case WANGLANDAU:{
+					energy[k] = 0.0;
+					magnetisation[k] = 0.0;
+					for(unsigned int j = 0; j < size; j++){
+						for(unsigned int i = 0; i < size; i++){
+							magnetisation[k] += cos(values[grid[i][j] - 1]);
+						}
+					}
+					energy[k] = ENERGY_CALC();
 
+					energy[k] /= (size * size);
+					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
+					
+					aguess += (12 /((2 * target_width)+((target_width)*(target_width)))) * (ENERGY_CALC() - (target_e*(size*size)));
+					break;
 				}
 		default:{
 				std::cout << "You should never be seeing this unless you've dun goof!" << std::endl;
@@ -235,7 +247,7 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 							acceptance++;
 						}
 						if (delta > 0){
-							if(exp(-1 * beta * delta) >= rand){
+							if(exp(-1 * aguess * delta) >= rand){
 								grid[x][y] = new_q;
 								acceptance++;
 							} else{
@@ -350,25 +362,19 @@ double POTTS_MODEL::JACK_KNIFE(double *observed, double avg){
 
 double POTTS_MODEL::SPIN_CHANGE_ENERGY_DIFF(unsigned int i, unsigned int j){
 	unsigned int q_before = grid[i][j];
-	double *configuration = new double[q];
-	for(unsigned int n = 1; n <= q; n++){
-		grid[i][j] = n;
-		configuration[n-1] = fabs(ENERGY_CALC() - target_e);
-	}
-	double smallest = configuration[0];
-	unsigned int lowest_conf = 0;
-	for(unsigned int n = 0; n < q; n++){
-		if(smallest < configuration[n]){
-			smallest = configuration[n];
-			lowest_conf = n;
-		}
-	}
-	if(lowest_conf == 0){
+	double difftar1, difftar2;
+	difftar1 = 0.0;
+	difftar2 = 0.0;
+	difftar1 = abs((ENERGY_CALC() / (size * size)) - (target_e));
+	std::uniform_int_distribution<unsigned int> qdistribution(1,q);
+	unsigned int rand_q = qdistribution(generator);
+	grid[i][j] = rand_q;
+	difftar2 = abs((ENERGY_CALC() / (size * size)) - (target_e));
+	if(difftar1 < difftar2){
 		grid[i][j] = q_before;
 	} else {
-		grid[i][j] = lowest_conf;
+		grid[i][j] = rand_q;
 	}
-	delete[] configuration;
 	return(ENERGY_CALC());
 }
 
@@ -394,11 +400,11 @@ POTTS_MODEL::~POTTS_MODEL(){
 
 int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
 	double target_lb, target_ub;
-	target_lb = target_e - target_width;
-	target_ub = target_e + target_width;
-	double energy = ENERGY_CALC();
+	target_lb = target_e - (target_width/2);
+	target_ub = target_e + (target_width/2);
+	double energy = ENERGY_CALC()/(size*size);
 
-	if( energy <= target_ub && energy >= target_lb ){
+	if( energy < target_ub && energy > target_lb){
 		return(0);
 	}
 	return(1);
