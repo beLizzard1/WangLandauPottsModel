@@ -8,7 +8,7 @@ do
 done
 
 for i in `seq 0.01 0.01 1.6`; do 
-	mkdir $i; cp ../template.cfg $i/param.cfg; 
+	mkdir $i; cp template.cfg $i/param.cfg;
 	echo "beta = $i" >> $i/param.cfg;
        	cp ../potts.app $i/potts.app;
        	cd $i; ./potts.app param.cfg;

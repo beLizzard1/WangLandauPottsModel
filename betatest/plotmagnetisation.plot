@@ -6,3 +6,4 @@ set autoscale
 set ylabel "Magnetisation"
 set xlabel "Beta {/Symbol b}"
 plot "magnetisation.dat" using 1:2:3 with yerrorbars
+

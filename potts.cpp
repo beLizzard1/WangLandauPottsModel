@@ -151,19 +151,8 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 					break;
 				}
 		case WANGLANDAU:{
-					energy[k] = 0.0;
-					magnetisation[k] = 0.0;
-					for(unsigned int j = 0; j < size; j++){
-						for(unsigned int i = 0; i < size; i++){
-							magnetisation[k] += cos(values[grid[i][j] - 1]);
-						}
-					}
-					energy[k] = ENERGY_CALC();
-
-					energy[k] /= (size * size);
-					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
-					
-					aguess += (12 /((2 * target_width)+((target_width)*(target_width)))) * (ENERGY_CALC() - (target_e*(size*size)));
+					energy[k] = 1;
+					magnetisation[k] = 1;	
 					break;
 				}
 		default:{
