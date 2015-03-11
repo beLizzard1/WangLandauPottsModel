@@ -8,7 +8,7 @@ enum UPDATE_ALG { METROPOLIS, WANGLANDAU };
 
 class POTTS_MODEL{
 	public:
-		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double,unsigned int);
+		POTTS_MODEL(unsigned int, unsigned int, unsigned int,double,unsigned int,double);
 		~POTTS_MODEL();
 		void SCRAMBLE_GRID();
 		void DRAW();
@@ -21,7 +21,7 @@ class POTTS_MODEL{
 		unsigned int seed;
 		std::default_random_engine generator;
 		unsigned int **grid;
-		unsigned int numbins = 100;
+		unsigned int numbins = 10;
 		
 		double *values; 
 
@@ -41,21 +41,28 @@ class POTTS_MODEL{
 		double specificheat_avg;
 		double specificheat_err;
 
+		double *estar;
+		double estar_avg;
+		double estart_err;
+
+
 		double aguess;
+		double *arrayofan;
 
 		unsigned int acceptance;
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);
 		void DO_UPDATE(UPDATE_ALG);
 		void ERROR_CALC();
+		void write_metropolis_output();
 		double JACK_KNIFE(double*, double);
+		double target_e;
+		double target_width;
 	private:
 		unsigned int q;
 		unsigned int o_nearestneighbour;
 		double beta;
 		double coupling;
-		double target_e;
-		double target_width;
 		int NEAREST_NEIGHBOUR(unsigned int, unsigned int);
 		class REGION *regions;
 

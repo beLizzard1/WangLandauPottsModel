@@ -14,20 +14,22 @@
 //#include <mgl2/qt.h>
 #include "potts.h"
 
-POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas){
+POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas, double ag){
 	q = dim_q;
 	size = dim_grid;
 	o_nearestneighbour = o_nn;
 	beta = b;
-	coupling = 1.0;
+	coupling = -1;
 	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
 	generator.seed(seed);
-
+	aguess = ag;
 	nmeasurements = nmeas;
 	energy = new double[nmeasurements];
 	magnetisation = new double[nmeasurements];
 	specificheat = new double[nmeasurements];
 	susceptibility = new double[nmeasurements];
+	estar = new double[nmeasurements];
+	arrayofan = new double[100];
 
 	grid = new unsigned int*[size];
 	for(unsigned int i = 0; i < size; i++){
@@ -46,6 +48,45 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	}
 
 }
+
+void POTTS_MODEL::write_metropolis_output(){
+	std::ofstream acceptancef;
+	acceptancef.open("acceptance.dat");
+	acceptancef << beta << " " << (double)acceptance / (double)nmeasurements << std::endl;
+	acceptancef.close();
+
+	std::ofstream energy;
+	energy.open("energy.dat");
+	energy << beta << " " << energy_avg << " " << energy_err << std::endl;
+	energy.close();
+
+	std::ofstream magnetisation;
+	magnetisation.open("magnetisation.dat");
+	magnetisation << beta << " " << magnetisation_avg << " " << magnetisation_err << std::endl;
+	magnetisation.close();
+
+	std::ofstream susceptibility;
+	susceptibility.open("susceptibility.dat");
+	susceptibility << beta << " " << susceptibility_avg << " " << susceptibility_err << std::endl;
+	susceptibility.close();
+
+	std::ofstream specificheat;
+	specificheat.open("specificheat.dat");
+	specificheat << beta << " " << specificheat_avg << " " << specificheat_err << std::endl;
+	specificheat.close();
+
+
+	std::ofstream lattice;
+	lattice.open ("lattice.lat");
+	for(unsigned int j = 0; j < size; j++){
+		for(unsigned int i = 0; i < size; i++){
+			lattice << grid[i][j] << " ";
+		}
+		lattice << std::endl;
+	}
+	lattice.close();
+}
+
 
 void POTTS_MODEL::SCRAMBLE_GRID(){
 	std::uniform_int_distribution<unsigned int> distribution(1,q);
@@ -100,11 +141,10 @@ double POTTS_MODEL::ENERGY_CALC(){
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
 			//energy += NEAREST_NEIGHBOUR(i,j);
-			energy += (1 + cos(values[grid[i][j]-1] * cos(values[grid[(i+1)%size][j]-1]))/2);
-			energy += (1 + cos(values[grid[i][j]-1] * cos(values[grid[i][(j+1)%size]-1]))/2);
+			energy += coupling * cos(values[grid[i][j]-1] - values[grid[(i+1)%size][j]-1]);
+			energy += coupling * cos(values[grid[i][j]-1] - values[grid[i][(j+1)%size]-1]);
 		}
 	}
-	energy *= -beta;
 	return(energy);	
 }
 
@@ -146,13 +186,27 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 					/* Going to use preexisting energy calculation function to do the measurements */
 					energy[k] = ENERGY_CALC();
 					/* Now to divide by volume */
-					energy[k] /= (size * size);
+					//energy[k] /= (size * size);
 					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
+					energy[k] /= (size*size);
+					specificheat[k] = energy[k] * energy[k];
+					susceptibility[k] = magnetisation[k]*magnetisation[k];
 					break;
 				}
 		case WANGLANDAU:{
-					energy[k] = 1;
-					magnetisation[k] = 1;	
+					energy[k] = 0.0;
+					magnetisation[k] = 0.0;
+					for(unsigned int j = 0; j < size; j++){
+						for(unsigned int i = 0; i < size; i++){
+							magnetisation[k] += cos(values[grid[i][j] - 1]);
+						}
+					}
+					energy[k] = ENERGY_CALC();
+					energy[k] /= (size * size);
+					magnetisation[k] = fabs(magnetisation[k])/(size*size);
+					specificheat[k] = energy[k] * energy[k];
+					susceptibility[k] = magnetisation[k];
+					estar[k] = (ENERGY_CALC() - target_e);
 					break;
 				}
 		default:{
@@ -218,25 +272,22 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 					new_q = qdistribution(generator);
 
-					grid[x][y] = new_q;					
-
+					grid[x][y] = new_q;
 					H_new = ENERGY_CALC();
+
+					double delta = H_new - H_old;
 					if( OUTSIDE_ENERGY_BAND() == 1 ){
 						grid[x][y] = old_q;
 						break;
 					} else {
-
 						std::uniform_real_distribution<double> pdistribution(0,1);
 						rand = pdistribution(generator);
-
-						double delta = H_old - H_new;
-
 						if (delta <= 0){
 							grid[x][y] = new_q;
 							acceptance++;
 						}
 						if (delta > 0){
-							if(exp(-1 * aguess * delta) >= rand){
+							if(exp(-1 * aguess * (H_new - target_e)) >= rand){
 								grid[x][y] = new_q;
 								acceptance++;
 							} else{
@@ -311,6 +362,37 @@ void POTTS_MODEL::ERROR_CALC(){
 	}
 	magnetisation_err *= (numbins - 1.0) / (double)numbins;
 	magnetisation_err = sqrt(magnetisation_err);
+
+
+	//Specific Heat Cv=beta^2 * average of e^2 - (average e)^2
+	specificheat_err = energy_err;
+
+	specificheat_avg = 0;
+	for(unsigned int l = 0; l < nmeasurements; l++){
+		specificheat_avg += specificheat[l];
+	}
+	specificheat_avg /= nmeasurements; 
+	specificheat_avg -= (energy_avg * energy_avg);
+
+	specificheat_avg *= (beta * beta);
+
+	//Susceptibility chi=beta * average of m^2 - (average M)^2
+	susceptibility_err = magnetisation_err;
+
+	susceptibility_avg = 0;
+	for(unsigned int l = 0; l < nmeasurements; l++){
+		susceptibility_avg += susceptibility[l];
+	}
+	susceptibility_avg /= nmeasurements;
+	susceptibility_avg -= (magnetisation_avg * magnetisation_avg);
+
+	susceptibility_avg *= beta;
+
+	//E Star
+	for(unsigned int l = 0; l < nmeasurements; l++){
+		estar_avg += estar[l];
+	}
+	estar_avg /= nmeasurements;
 }
 
 
@@ -329,14 +411,14 @@ double POTTS_MODEL::JACK_KNIFE(double *observed, double avg){
 		bin[l] /= slice;
 		sumbins += bin[l];
 	}
-	
+
 	double *jackbins;
 	jackbins = new double[numbins];
 	// Form the jack knife bins
 	for(unsigned int l = 0; l < numbins; l++){
 		jackbins[l] = (sumbins - bin[l])/(numbins - 1);
 	}
-	
+
 	// Compute the Error
 	double error = 0;
 	for(unsigned int l = 0; l < numbins; l++){
@@ -354,11 +436,11 @@ double POTTS_MODEL::SPIN_CHANGE_ENERGY_DIFF(unsigned int i, unsigned int j){
 	double difftar1, difftar2;
 	difftar1 = 0.0;
 	difftar2 = 0.0;
-	difftar1 = abs((ENERGY_CALC() / (size * size)) - (target_e));
+	difftar1 = abs(ENERGY_CALC() - target_e);
 	std::uniform_int_distribution<unsigned int> qdistribution(1,q);
 	unsigned int rand_q = qdistribution(generator);
 	grid[i][j] = rand_q;
-	difftar2 = abs((ENERGY_CALC() / (size * size)) - (target_e));
+	difftar2 = abs(ENERGY_CALC() - target_e);
 	if(difftar1 < difftar2){
 		grid[i][j] = q_before;
 	} else {
@@ -384,6 +466,7 @@ POTTS_MODEL::~POTTS_MODEL(){
 	delete[] magnetisation;
 	delete[] specificheat;
 	delete[] susceptibility;
+	delete[] estar;
 
 }
 
@@ -391,7 +474,7 @@ int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
 	double target_lb, target_ub;
 	target_lb = target_e - (target_width/2);
 	target_ub = target_e + (target_width/2);
-	double energy = ENERGY_CALC()/(size*size);
+	double energy = ENERGY_CALC();
 
 	if( energy < target_ub && energy > target_lb){
 		return(0);

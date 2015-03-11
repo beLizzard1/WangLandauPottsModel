@@ -26,23 +26,24 @@ int main(int argc, char **argv) {
 	double beta, target_e, target_width, aguess;
 	bool wanglandau;
 
+	// Read the configuration/parameters file into variables most of which can be immediately put into the initialisation function
 	if ( read_input_libconf(filename,&target_e, &target_width, &dim_q, &o_nn, &dim_grid, &beta, &nmeasurements, &aguess, &wanglandau) != 0 ){
 		std::cout << "Error parsing input" << std::endl;
 		return(1);
 	}
 
-	// Now initialising the class
-	POTTS_MODEL potts(dim_q,o_nn,dim_grid,beta,nmeasurements);
+	// Now initialising the class that will contain the simulation
+	POTTS_MODEL potts(dim_q,o_nn,dim_grid,beta,nmeasurements,aguess);
 
-	potts.SCRAMBLE_GRID();
-	//potts.FORCE_ALIGN_GRID();
+	//potts.SCRAMBLE_GRID();
+	potts.FORCE_ALIGN_GRID();
 
-	/* telling the class what target it needs to hit and exist inside */
+	// telling the class what target energy band it needs to hit and exist inside
+	// required for Wang Landau
 	potts.SET_TARGET(target_e, target_width);
 
 	// Add a variable that tells DO_UPDATE what type of update algorithm to use
 	UPDATE_ALG ALG;
-	
 	if(wanglandau == true){
 		ALG = WANGLANDAU;
 	} else {
@@ -51,22 +52,21 @@ int main(int argc, char **argv) {
 
 	// Force lattice into configuration that we want
 	// Kinda like a random heat bath to drive energy to target
+	// Required for Entropic Sampling needed in the WANG LANDAU Method
 	while(potts.OUTSIDE_ENERGY_BAND() && ALG == WANGLANDAU){
 		for(unsigned int j = 0; j < potts.size; j++){
 			for(unsigned int i = 0; i < potts.size; i++){
 				potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
-				//std::cout << potts.ENERGY_CALC() / (potts.size * potts.size) << std::endl;
+				//std::cout << "Current Energy: " << potts.ENERGY_CALC() << std::endl;
 			}
 		}
 	}
 
-
-
 	// Do some thermalisation
-	for(unsigned int i = 0; i < 100; i++){
+	for(unsigned int i = 0; i < 250; i++){
 		potts.DO_UPDATE(ALG);
 	}
-	
+
 	/* Reset acceptance to 0*/
 	potts.acceptance = 0;
 
@@ -76,31 +76,36 @@ int main(int argc, char **argv) {
 	}
 
 	potts.ERROR_CALC();
+	if(ALG == WANGLANDAU){
+		potts.arrayofan[0] = potts.aguess;
+		//Using the Error Calc and the measurements taken, now all you need to do is calculate the next a_n
+		potts.aguess += (12 / ((4 * potts.target_width) + (potts.target_width * potts.target_width))) * potts.estar_avg;
+		// Now do the a_n iteration loop 100 times should be enough for convergence
+		for(unsigned int i = 1; i < 100; i++){
+			for(unsigned int i = 0; i < potts.nmeasurements; i++){
+				potts.DO_UPDATE(ALG);
+				potts.DO_MEASUREMENTS(i,ALG);
+			}
+			potts.ERROR_CALC();
+			potts.aguess += (12 / ((4*potts.target_width) + (potts.target_width * potts.target_width))) * potts.estar_avg;
+			//Add the new guess to the array
+			potts.arrayofan[i] = potts.aguess;
+		}
 
-	std::ofstream acceptance;
-	acceptance.open("acceptance.dat");
-	acceptance << beta << " " << (double)potts.acceptance / (double)potts.nmeasurements << std::endl;
-	acceptance.close();
 
-	std::ofstream energy;
-	energy.open("energy.dat");
-	energy << beta << " " << potts.energy_avg << " " << potts.energy_err << std::endl;
-	energy.close();
+		std::ofstream an;
+		an.open("an.dat");
+		for(unsigned int l = 0; l < 100; l++){
+			an << l << " " << potts.arrayofan[l] << std::endl;
+		}
+		an.close();
+	}
 
-	std::ofstream magnetisation;
-	magnetisation.open("magnetisation.dat");
-	magnetisation << beta << " " << potts.magnetisation_avg << " " << potts.magnetisation_err << std::endl;
-	magnetisation.close();
 
-	//std::ofstream lattice;
-	//lattice.open ("lattice.lat");
-	//for(unsigned int j = 0; j < potts.size; j++){
-	//	for(unsigned int i = 0; i < potts.size; i++){
-	//		lattice << potts.grid[i][j] << " ";
-	//	}
-	//	lattice << std::endl;
-	//}
-	//lattice.close();
+	if(ALG == METROPOLIS){
+		potts.write_metropolis_output();
+	}
+
 
 	return(0);
 }
