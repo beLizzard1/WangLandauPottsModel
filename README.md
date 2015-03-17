@@ -1,10 +1,9 @@
 # Wang Landau Potts Model Solver
 
 ###Requirements
-* `MathGL`
 * `libconfig`
 * C++ Compiler supporting `-std=gnu+11`
-* `<random>`,`<chrono>`
+* `<random>`
 
 ### To Do
 * Improve the energy calculation function.
