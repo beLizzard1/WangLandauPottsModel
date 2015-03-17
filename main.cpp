@@ -20,9 +20,9 @@ int main(int argc, char **argv) {
 
 
 	POTTS_MODEL potts();
-	read_input_libconfig(filename,&potts);
+	read_input_libconf(filename,&potts);
 
-	
+
 
 
 
