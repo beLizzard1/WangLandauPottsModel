@@ -33,7 +33,11 @@
 *.lat
 
 # Folders
+<<<<<<< HEAD
 betatest/0.*
 betatest/1.*
 betatest/2.00
 critical/dim*
+=======
+betatest
+>>>>>>> 4a8bfaa...  Changes to be committed:
