@@ -16,39 +16,8 @@
 
 
 // Class Initialisation, goes though and assigns values
-POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas, double ag){
-	q = dim_q;
-	size = dim_grid;
-	o_nearestneighbour = o_nn;
-	beta = b;
-	coupling = 0.5;
-	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
-	generator.seed(seed);
-	aguess = ag;
-	nmeasurements = nmeas;
-	energy = new double[nmeasurements];
-	magnetisation = new double[nmeasurements];
-	specificheat = new double[nmeasurements];
-	susceptibility = new double[nmeasurements];
-	estar = new double[nmeasurements];
-	arrayofan = new double[nmeasurements];
-
-	grid = new unsigned int*[size];
-	for(unsigned int i = 0; i < size; i++){
-		grid[i] = new unsigned int[size];
-	}
-	for(unsigned int j = 0; j < size; j++){
-		for(unsigned int i = 0; i < size; i++){
-			/* Setting 0 as unassigned */
-			grid[i][j] = 0;
-		}
-	}
-
-	values = new double[q];
-	for(unsigned int i = 0; i < q; i++){
-		values[i] = (2 * M_PI * (i+1)) / q;
-	}
-
+POTTS_MODEL::POTTS_MODEL(){
+	
 }
 
 void POTTS_MODEL::write_metropolis_output(){
@@ -146,7 +115,7 @@ double POTTS_MODEL::ENERGY_CALC(){
 			energy += coupling * cos(values[grid[i][j]-1] - values[grid[i][(j+1)%size]-1]);
 		}
 	}
-	return(energy);	
+	return(energy);
 }
 
 int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
@@ -156,7 +125,7 @@ int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
 	if(o_nearestneighbour == 0){
 		return(0);
 	} else {
-		// Doesn't actually get the nearest neighbours because it misses the diagonal :( might improve this at some point     
+		// Doesn't actually get the nearest neighbours because it misses the diagonal :( might improve this at some point
 		// Looks to the nearest neighbours to the right
 		for(unsigned int n = 1; n <= o_nearestneighbour; n++){
 			if( (grid[i][j] == grid[(i+n)%size][j]) ){
@@ -297,7 +266,7 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 						}
 
 					}
-					break;					
+					break;
 				}
 		default:
 				std::cout << "Not needed really" << std::endl;
@@ -376,7 +345,7 @@ void POTTS_MODEL::ERROR_CALC(UPDATE_ALG TYPE){
 					for(unsigned int l = 0; l < nmeasurements; l++){
 						specificheat_avg += specificheat[l];
 					}
-					specificheat_avg /= nmeasurements; 
+					specificheat_avg /= nmeasurements;
 					specificheat_avg -= (energy_avg * energy_avg);
 
 					specificheat_avg *= (beta * beta);
@@ -392,7 +361,7 @@ void POTTS_MODEL::ERROR_CALC(UPDATE_ALG TYPE){
 					susceptibility_avg -= (magnetisation_avg * magnetisation_avg);
 
 					susceptibility_avg *= beta;
-					
+
 					break;
 				}
 		case WANGLANDAU:{
