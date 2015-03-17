@@ -17,7 +17,7 @@
 
 // Class Initialisation, goes though and assigns values
 POTTS_MODEL::POTTS_MODEL(){
-	
+
 }
 
 void POTTS_MODEL::write_metropolis_output(){
@@ -115,12 +115,9 @@ double POTTS_MODEL::ENERGY_CALC(){
 			energy += coupling * cos(values[grid[i][j]-1] - values[grid[i][(j+1)%size]-1]);
 		}
 	}
-<<<<<<< HEAD
 	return(energy);
-=======
 	energy *= -beta;
-	return(energy);	
->>>>>>> 4a8bfaa...  Changes to be committed:
+	return(energy);
 }
 
 int POTTS_MODEL::NEAREST_NEIGHBOUR(unsigned int i, unsigned int j){
@@ -189,16 +186,11 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 				break;
 			}
 	}
-<<<<<<< HEAD
-
-
-=======
 	/* Going to use preexisting energy calculation function to do the measurements */
 	energy[k] = ENERGY_CALC();
 	/* Now to divide by volume */
 	energy[k] /= (size * size);
 	magnetisation[k] = fabs(magnetisation[k]) / (size * size);
->>>>>>> 4a8bfaa...  Changes to be committed:
 }
 
 void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
@@ -213,10 +205,7 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 					old_q = grid[x][y];
 
 					std::uniform_int_distribution<unsigned int> qdistribution(1,q);
-<<<<<<< HEAD
 
-=======
->>>>>>> 4a8bfaa...  Changes to be committed:
 					new_q = qdistribution(generator);
 
 					H_old = ENERGY_CALC();
@@ -227,7 +216,6 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 					std::uniform_real_distribution<double> pdistribution(0,1);
 					rand = pdistribution(generator);
-<<<<<<< HEAD
 
 					double delta = H_old - H_new;
 
@@ -285,7 +273,6 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 					}
 					break;
 				}
-=======
 
 					if( exp(beta * (H_new - H_old)) > 1 ){
 						grid[x][y] = new_q;
@@ -302,7 +289,6 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 		case WANGLANDAU:
 				std::cout << "Not yet programmed" << std::endl;
 				break;
->>>>>>> 4a8bfaa...  Changes to be committed:
 		default:
 				std::cout << "Not needed really" << std::endl;
 				break;
@@ -311,7 +297,6 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 
 void POTTS_MODEL::ERROR_CALC(UPDATE_ALG TYPE){
 
-<<<<<<< HEAD
 	switch(TYPE){
 		case METROPOLIS:{
 
@@ -412,7 +397,7 @@ void POTTS_MODEL::ERROR_CALC(UPDATE_ALG TYPE){
 				     std::cout << "Shouldn't be seeing this" << std::endl;
 				     break;
 			     }
-=======
+
 void POTTS_MODEL::ERROR_CALC(){
 	double *bin, *jackbins;
 	bin = new double[numbins];
@@ -479,7 +464,6 @@ double POTTS_MODEL::SPIN_CHANGE_ENERGY_DIFF(unsigned int i, unsigned int j){
 	for(unsigned int n = 1; n <= q; n++){
 		grid[i][j] = n;
 		configuration[n-1] = fabs(ENERGY_CALC() - target_e);
->>>>>>> 4a8bfaa...  Changes to be committed:
 	}
 }
 
