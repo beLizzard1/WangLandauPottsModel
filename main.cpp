@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 	POTTS_MODEL potts();
 	read_input_libconf(filename,&potts);
 
-
+	std::cout << potts.beta << std::endl;
 
 
 
