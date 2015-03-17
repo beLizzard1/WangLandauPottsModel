@@ -53,7 +53,7 @@ class POTTS_MODEL{
 		unsigned int nmeasurements;
 		void DO_MEASUREMENTS(unsigned int, UPDATE_ALG);
 		void DO_UPDATE(UPDATE_ALG);
-		void ERROR_CALC();
+		void ERROR_CALC(UPDATE_ALG);
 		void write_metropolis_output();
 		double JACK_KNIFE(double*, double);
 		double target_e;

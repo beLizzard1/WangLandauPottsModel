@@ -35,8 +35,18 @@ int main(int argc, char **argv) {
 	// Now initialising the class that will contain the simulation
 	POTTS_MODEL potts(dim_q,o_nn,dim_grid,beta,nmeasurements,aguess);
 
+	//Check that the target energy is sensible. If it is less than 2L^2 exit cause it's annoying
+	if((target_e < 0) && (target_e > (-2 * (dim_grid * dim_grid))) ){
+		std::cout << "Target Energy is Impossible for current grid size" << std::endl;
+		return(2);
+	}
+
+
 	//potts.SCRAMBLE_GRID();
 	potts.FORCE_ALIGN_GRID();
+
+	std::cout << "Minimum Energy: " << potts.ENERGY_CALC() << std::endl;
+	std::cout << "Maximum Energy: 0" << std::endl;
 
 	// telling the class what target energy band it needs to hit and exist inside
 	// required for Wang Landau
@@ -57,7 +67,7 @@ int main(int argc, char **argv) {
 		for(unsigned int j = 0; j < potts.size; j++){
 			for(unsigned int i = 0; i < potts.size; i++){
 				potts.SPIN_CHANGE_ENERGY_DIFF(i,j);
-				//std::cout << "Current Energy: " << potts.ENERGY_CALC() << std::endl;
+				std::cout << "Current Energy: " << potts.ENERGY_CALC() << std::endl;
 			}
 		}
 	}
@@ -75,18 +85,18 @@ int main(int argc, char **argv) {
 		potts.DO_MEASUREMENTS(i,ALG);
 	}
 
-	potts.ERROR_CALC();
+	potts.ERROR_CALC(ALG);
 	if(ALG == WANGLANDAU){
 		potts.arrayofan[0] = potts.aguess;
 		//Using the Error Calc and the measurements taken, now all you need to do is calculate the next a_n
 		potts.aguess += (12 / ((4 * potts.target_width) + (potts.target_width * potts.target_width))) * potts.estar_avg;
 		// Now do the a_n iteration loop 100 times should be enough for convergence
-		for(unsigned int i = 1; i < 100; i++){
+		for(unsigned int i = 1; i < potts.nmeasurements; i++){
 			for(unsigned int i = 0; i < potts.nmeasurements; i++){
 				potts.DO_UPDATE(ALG);
 				potts.DO_MEASUREMENTS(i,ALG);
 			}
-			potts.ERROR_CALC();
+			potts.ERROR_CALC(ALG);
 			potts.aguess += (12 / ((4*potts.target_width) + (potts.target_width * potts.target_width))) * potts.estar_avg;
 			//Add the new guess to the array
 			potts.arrayofan[i] = potts.aguess;
@@ -95,7 +105,7 @@ int main(int argc, char **argv) {
 
 		std::ofstream an;
 		an.open("an.dat");
-		for(unsigned int l = 0; l < 100; l++){
+		for(unsigned int l = 0; l < potts.nmeasurements; l++){
 			an << l << " " << potts.arrayofan[l] << std::endl;
 		}
 		an.close();

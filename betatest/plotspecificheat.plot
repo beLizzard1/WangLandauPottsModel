@@ -5,4 +5,5 @@ set key right bottom
 set autoscale
 set ylabel "Specific Heat"
 set xlabel "Beta {/Symbol b}"
-plot "specificheat.dat" using 1:2
+plot "specificheat.dat" using 1:2:3 with yerrorbars
+

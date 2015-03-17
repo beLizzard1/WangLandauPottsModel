@@ -14,12 +14,14 @@
 //#include <mgl2/qt.h>
 #include "potts.h"
 
+
+// Class Initialisation, goes though and assigns values
 POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim_grid, double b, unsigned int nmeas, double ag){
 	q = dim_q;
 	size = dim_grid;
 	o_nearestneighbour = o_nn;
 	beta = b;
-	coupling = -1;
+	coupling = 0.5;
 	seed = std::chrono::system_clock::now().time_since_epoch().count(); //Generating seed
 	generator.seed(seed);
 	aguess = ag;
@@ -29,7 +31,7 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 	specificheat = new double[nmeasurements];
 	susceptibility = new double[nmeasurements];
 	estar = new double[nmeasurements];
-	arrayofan = new double[100];
+	arrayofan = new double[nmeasurements];
 
 	grid = new unsigned int*[size];
 	for(unsigned int i = 0; i < size; i++){
@@ -44,7 +46,7 @@ POTTS_MODEL::POTTS_MODEL(unsigned int dim_q, unsigned int o_nn, unsigned int dim
 
 	values = new double[q];
 	for(unsigned int i = 0; i < q; i++){
-		values[i] = (2 * M_PI * (i)) / q;
+		values[i] = (2 * M_PI * (i+1)) / q;
 	}
 
 }
@@ -137,7 +139,6 @@ void POTTS_MODEL::DRAW(){
 double POTTS_MODEL::ENERGY_CALC(){
 
 	double energy = 0;
-
 	for(unsigned int j = 0; j < size; j++){
 		for(unsigned int i = 0; i < size; i++){
 			//energy += NEAREST_NEIGHBOUR(i,j);
@@ -188,7 +189,7 @@ void POTTS_MODEL::DO_MEASUREMENTS(unsigned int k,UPDATE_ALG TYPE){
 					/* Now to divide by volume */
 					//energy[k] /= (size * size);
 					magnetisation[k] = fabs(magnetisation[k]) / (size * size);
-					energy[k] /= (size*size);
+					//energy[k] /= (size*size);
 					specificheat[k] = energy[k] * energy[k];
 					susceptibility[k] = magnetisation[k]*magnetisation[k];
 					break;
@@ -304,95 +305,109 @@ void POTTS_MODEL::DO_UPDATE(UPDATE_ALG TYPE){
 	}
 }
 
-void POTTS_MODEL::ERROR_CALC(){
-	double *bin, *jackbins;
-	bin = new double[numbins];
-	jackbins = new double[numbins];
+void POTTS_MODEL::ERROR_CALC(UPDATE_ALG TYPE){
 
-	double sumbins;
+	switch(TYPE){
+		case METROPOLIS:{
 
-	for(unsigned int l = 0; l < nmeasurements; l++){
-		energy_avg += energy[l];
-		magnetisation_avg += magnetisation[l];
+					double *bin, *jackbins;
+					bin = new double[numbins];
+					jackbins = new double[numbins];
+
+					double sumbins;
+
+					for(unsigned int l = 0; l < nmeasurements; l++){
+						energy_avg += energy[l];
+						magnetisation_avg += magnetisation[l];
+					}
+					energy_avg /= nmeasurements;
+					magnetisation_avg /= nmeasurements;
+
+					/* Binning the Data for energy */
+					unsigned int slice = nmeasurements / numbins;
+					sumbins = 0.0;
+					for(unsigned int l = 0; l < numbins; l++){
+						bin[l] = 0.0;
+						for( unsigned int k = 0; k < slice; k++){
+							bin[l] += energy[l * slice + k];
+						}
+						bin[l] /= slice;
+						sumbins += bin[l];
+					}
+					// Forming the bins
+					for(unsigned int l = 0; l < numbins; l++){
+						jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
+					}
+
+					energy_err = 0.0;
+					for(unsigned int l = 0; l < numbins; l++){
+						energy_err += (energy_avg - jackbins[l]) * (energy_avg - jackbins[l]);
+					}
+					energy_err *= (numbins - 1.0) / (double)numbins;
+					energy_err = sqrt(energy_err);
+
+					/* Now the same for magnetisation */
+					sumbins = 0.0;
+					for(unsigned int l = 0; l < numbins; l++){
+						bin[l] = 0.0;
+						for( unsigned int k = 0; k < slice; k++){
+							bin[l] += magnetisation[l * slice + k];
+						}
+						bin[l] /= slice;
+						sumbins += bin[l];
+					}
+					// Forming the bins
+					for(unsigned int l = 0; l < numbins; l++){
+						jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
+					}
+
+					magnetisation_err = 0.0;
+					for(unsigned int l = 0; l < numbins; l++){
+						magnetisation_err += (magnetisation_avg - jackbins[l]) * (magnetisation_avg - jackbins[l]);
+					}
+					magnetisation_err *= (numbins - 1.0) / (double)numbins;
+					magnetisation_err = sqrt(magnetisation_err);
+
+
+					//Specific Heat Cv=beta^2 * average of e^2 - (average e)^2
+					specificheat_err = energy_err;
+
+					specificheat_avg = 0;
+					for(unsigned int l = 0; l < nmeasurements; l++){
+						specificheat_avg += specificheat[l];
+					}
+					specificheat_avg /= nmeasurements; 
+					specificheat_avg -= (energy_avg * energy_avg);
+
+					specificheat_avg *= (beta * beta);
+
+					//Susceptibility chi=beta * average of m^2 - (average M)^2
+					susceptibility_err = magnetisation_err;
+
+					susceptibility_avg = 0;
+					for(unsigned int l = 0; l < nmeasurements; l++){
+						susceptibility_avg += susceptibility[l];
+					}
+					susceptibility_avg /= nmeasurements;
+					susceptibility_avg -= (magnetisation_avg * magnetisation_avg);
+
+					susceptibility_avg *= beta;
+					
+					break;
+				}
+		case WANGLANDAU:{
+					//E Star
+					for(unsigned int l = 0; l < nmeasurements; l++){
+						estar_avg += estar[l];
+					}
+					estar_avg /= nmeasurements;
+					break;
+				}
+		default:{
+				     std::cout << "Shouldn't be seeing this" << std::endl;
+				     break;
+			     }
 	}
-	energy_avg /= nmeasurements;
-	magnetisation_avg /= nmeasurements;
-
-	/* Binning the Data for energy */
-	unsigned int slice = nmeasurements / numbins;
-	sumbins = 0.0;
-	for(unsigned int l = 0; l < numbins; l++){
-		bin[l] = 0.0;
-		for( unsigned int k = 0; k < slice; k++){
-			bin[l] += energy[l * slice + k];
-		}
-		bin[l] /= slice;
-		sumbins += bin[l];
-	}
-	// Forming the bins
-	for(unsigned int l = 0; l < numbins; l++){
-		jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
-	}
-
-	energy_err = 0.0;
-	for(unsigned int l = 0; l < numbins; l++){
-		energy_err += (energy_avg - jackbins[l]) * (energy_avg - jackbins[l]);
-	}
-	energy_err *= (numbins - 1.0) / (double)numbins;
-	energy_err = sqrt(energy_err);
-
-	/* Now the same for magnetisation */
-	sumbins = 0.0;
-	for(unsigned int l = 0; l < numbins; l++){
-		bin[l] = 0.0;
-		for( unsigned int k = 0; k < slice; k++){
-			bin[l] += magnetisation[l * slice + k];
-		}
-		bin[l] /= slice;
-		sumbins += bin[l];
-	}
-	// Forming the bins
-	for(unsigned int l = 0; l < numbins; l++){
-		jackbins[l] = (sumbins - bin[l]) / (numbins - 1);
-	}
-
-	magnetisation_err = 0.0;
-	for(unsigned int l = 0; l < numbins; l++){
-		magnetisation_err += (magnetisation_avg - jackbins[l]) * (magnetisation_avg - jackbins[l]);
-	}
-	magnetisation_err *= (numbins - 1.0) / (double)numbins;
-	magnetisation_err = sqrt(magnetisation_err);
-
-
-	//Specific Heat Cv=beta^2 * average of e^2 - (average e)^2
-	specificheat_err = energy_err;
-
-	specificheat_avg = 0;
-	for(unsigned int l = 0; l < nmeasurements; l++){
-		specificheat_avg += specificheat[l];
-	}
-	specificheat_avg /= nmeasurements; 
-	specificheat_avg -= (energy_avg * energy_avg);
-
-	specificheat_avg *= (beta * beta);
-
-	//Susceptibility chi=beta * average of m^2 - (average M)^2
-	susceptibility_err = magnetisation_err;
-
-	susceptibility_avg = 0;
-	for(unsigned int l = 0; l < nmeasurements; l++){
-		susceptibility_avg += susceptibility[l];
-	}
-	susceptibility_avg /= nmeasurements;
-	susceptibility_avg -= (magnetisation_avg * magnetisation_avg);
-
-	susceptibility_avg *= beta;
-
-	//E Star
-	for(unsigned int l = 0; l < nmeasurements; l++){
-		estar_avg += estar[l];
-	}
-	estar_avg /= nmeasurements;
 }
 
 
@@ -467,7 +482,7 @@ POTTS_MODEL::~POTTS_MODEL(){
 	delete[] specificheat;
 	delete[] susceptibility;
 	delete[] estar;
-
+	delete[] arrayofan;
 }
 
 int POTTS_MODEL::OUTSIDE_ENERGY_BAND(){
