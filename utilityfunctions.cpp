@@ -12,7 +12,7 @@
 
 using namespace libconfig;
 
-int read_input_libconf(std::string file, POTTS_MODEL *potts){
+int read_input(std::string file, POTTS_MODEL *potts){
 	Config cfg;
 	try{
 			cfg.readFile(file.c_str());
@@ -54,16 +54,35 @@ int read_input_libconf(std::string file, POTTS_MODEL *potts){
 		return(1);
 	}
 
+	try{
+		potts->coldstart = cfg.lookup("coldstart");
+	}
+	catch(const SettingNotFoundException &nfex){
+		std::cerr << "No 'coldstart' parameter found" << std::endl;
+		std::cerr << "Unrecoverable Error. Add a coldstart to the " << file << std::endl;
+		return(1);
+	}
+
+
+	//Now you've got the invarient parameters sorted now do the rest of them
 	if(potts->wanglandau == true){
 		// Collect specifics for that
+		try{
+			potts->a0 = cfg.lookup("a0");
+			potts->target_e = cfg.lookup("target_e");
+			potts->target_width = cfg.lookup("target_width");
+			potts->n_entropic_samples = cfg.lookup("n_entropic_samples");
+		}
+		catch(const SettingNotFoundException &nfex){
+			return(1);
+		}
 	} else {
 		// Collect specifics for Metropolis algorithm beta etc.
 		try{
 			potts->beta = cfg.lookup("beta");
+			potts->n_samples = cfg.lookup("n_samples");
 		}
 		catch(const SettingNotFoundException &nfex){
-			std::cerr << "No 'beta' parameter found" << std::endl;
-			std::cerr << "Unrecoverable Error. Add a beta to the " << file << " or change wanglandau" << std::endl;
 			return(1);
 		}
 	}

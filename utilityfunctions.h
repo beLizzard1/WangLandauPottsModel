@@ -2,7 +2,7 @@
 #define UTILITY_H
 
 
-int read_input_libconf(std::string file,POTTS_MODEL *potts);
+int read_input(std::string file,POTTS_MODEL *potts);
 
 
 #endif
