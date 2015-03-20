@@ -65,6 +65,6 @@ double POTTS_MODEL::magnetisationcalc(){
 	    imag += sin(angles[grid[i][j]]);
         }
     }
-    magnetisation = sqrt( real * real + imag * imag );
+    magnetisation = sqrt( (real * real) + (imag * imag) );
     return(magnetisation);
 }

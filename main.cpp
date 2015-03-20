@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 	// than it needs
 
 	for(unsigned int i = 1; i <= potts.n_q; i++){
-		potts.angles[i] = (2.0 * M_PIl * (i-1)) / (double)potts.n_q;
+		potts.angles[i] = (2.0 * M_PIl * (i)) / (double)potts.n_q;
 		//std::cout<< potts.angles[i] << std::endl;
 	}
 
