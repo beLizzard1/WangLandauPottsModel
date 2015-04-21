@@ -18,12 +18,15 @@ void POTTS_MODEL::metropolis(){
         grid[i] = new unsigned int [size];
     }
 
+    // To ensure the number of samples is the average of samples
+    // that each point on the lattice recieves multiply by volume
+    n_samples *= (size * size);
+
     //Setup Arrays for Measurements
     energy = new double[n_samples];
     magnetisation = new double[n_samples];
 
     // Use a Mersenne Prime Twister Random Number Generator
-    std::mt19937_64 generator;
     std::uniform_int_distribution<int> distribution(1,n_q);
 
     if(coldstart == true){
@@ -45,22 +48,40 @@ void POTTS_MODEL::metropolis(){
     //std::cout << "Program Gets To JUST BEFORE THERMALISATION" << std::endl;
     // A Metropolis Algorithm needs Thermalising.
     acceptance = 0;
-    for(unsigned int i = 0; i < n_therm; i++){
-        metropolis_update();
+    n_therm *= (size * size);
+    if(randomspin == true){
+        for(unsigned int i = 0; i < n_therm; i++){
+            metropolis_update();
+        }
+    } else {
+        for(unsigned int n = 0; n < n_therm; n++){
+            unsigned int y = n % size;
+            unsigned int x = (n % (size*size)) / size;
+            smooth_metropolis_update(x,y);
+        }
     }
     //std::cout << "Program COMPLETES THERMALISATION" << std::endl;
     // Reset the acceptance
     acceptance = 0;
-    for(unsigned int i = 0; i < n_samples; i++){
-        metropolis_update();
-        metropolis_measurement(i);
+    if(randomspin == true){
+        for(unsigned int i = 0; i < n_samples; i++){
+            metropolis_update();
+            metropolis_measurement(i);
+        }
+    } else {
+        for(unsigned int n = 0; n < n_samples; n++){
+            unsigned int y = n % size;
+            unsigned int x = (n % (size*size)) / size;
+            smooth_metropolis_update(x,y);
+            metropolis_measurement(n);
+        }
     }
 
     // Errors and Thermodynamic Derived Quantities
     double *specificheat = new double[n_samples];
     double *susceptibility = new double[n_samples];
 
-    for(unsigned int i = 0; i < n_samples; i++){
+    for(unsigned int i = 0; i < n_samples ; i++){
         specificheat[i] = energy[i] * energy[i];
         susceptibility[i] = magnetisation[i] * magnetisation[i];
     }
@@ -106,40 +127,30 @@ void POTTS_MODEL::metropolis(){
 	file.close();
 
     file.open("acceptance.dat");
-    file << beta << " " << acceptance << " " << std::endl;
+    file << beta << " " << acceptance << std::endl;
     file.close();
 
 }
 
 void POTTS_MODEL::metropolis_measurement(unsigned int k){
     energy[k] = energycalc(); //Total on Lattice
-    magnetisation[k] = magnetisationcalc(); // Total on Lattice
-    magnetisation[k] = abs(magnetisation[k]); // Absolute Value
+    magnetisation[k] = abs(magnetisationcalc()); // Total on Lattice
+    //magnetisation[k] = abs(magnetisation[k]); // Absolute Value
 
     unsigned int volume = size * size;
 
     energy[k] /= volume; // Per Lattice Site
     magnetisation[k] /= volume; // Per Lattice Site
-
 }
 
-
-void POTTS_MODEL::metropolis_update(){
-    std::mt19937_64 generator;
-    generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
+void POTTS_MODEL::smooth_metropolis_update(unsigned int x, unsigned int y){
     std::uniform_int_distribution<unsigned int> distribution(1,n_q);
-    std::uniform_int_distribution<unsigned int> coordinates(0,size-1);
-
-    //std::cout << "Program Gets INSDIE metropolis_update()" << std::endl;
-
-    unsigned int x = coordinates(generator);
-    unsigned int y = coordinates(generator);
-    double energy_pre = energycalc();
+    double energy_pre = energychange(x,y);
     unsigned int old_q = grid[x][y];
 
     unsigned int new_q = distribution(generator);
     grid[x][y] = new_q;
-    double energy_post = energycalc();
+    double energy_post = energychange(x,y);
 
     std::uniform_real_distribution<double> pdistribution(0,1);
     double delta = energy_post - energy_pre;
@@ -157,6 +168,40 @@ void POTTS_MODEL::metropolis_update(){
         }
     }
 }
+
+void POTTS_MODEL::metropolis_update(){
+    std::uniform_int_distribution<unsigned int> distribution(1,n_q);
+    std::uniform_int_distribution<unsigned int> coordinates(0,size-1);
+
+    //std::cout << "Program Gets INSDIE metropolis_update()" << std::endl;
+
+    unsigned int x = coordinates(generator);
+    unsigned int y = coordinates(generator);
+    double energy_pre = energychange(x,y);
+    unsigned int old_q = grid[x][y];
+
+    unsigned int new_q = distribution(generator);
+    grid[x][y] = new_q;
+    double energy_post = energychange(x,y);
+
+    std::uniform_real_distribution<double> pdistribution(0,1);
+    double delta = energy_post - energy_pre;
+    double rand = pdistribution(generator);
+
+    if( delta < 0.0 ){
+        grid[x][y] = new_q;
+        acceptance++;
+    } else {
+        if(exp(-1 * beta * delta) > rand){
+            grid[x][y] = new_q;
+            acceptance++;
+        } else {
+            grid[x][y] = old_q;
+        }
+    }
+}
+
+
 
 double POTTS_MODEL::metropolis_average(double *array){
     double average = 0.0;

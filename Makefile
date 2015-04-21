@@ -1,12 +1,12 @@
 CC=g++
-CFLAGS=-O2 -std=gnu++11 -pedantic -Wall -Wextra
+CFLAGS=-O3 -std=gnu++11 -pedantic -Wall -Wextra
 LDFLAGS=-lm -lconfig++
 INCLUDES=-I/usr/local/include -I.
 
 BinaryName=potts.app
 
 
-OBJS=main.o potts.o metropolis.o utilityfunctions.o
+OBJS=main.o potts.o metropolis.o wanglandau.o utilityfunctions.o
 all: $(OBJS) $(BinaryName)
 
 

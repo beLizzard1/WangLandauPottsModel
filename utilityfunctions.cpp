@@ -70,8 +70,12 @@ int read_input(std::string file, POTTS_MODEL *potts){
 		try{
 			potts->a0 = cfg.lookup("a0");
 			potts->target_e = cfg.lookup("target_e");
+			potts->target_e *= (potts->size * potts->size);
 			potts->target_width = cfg.lookup("target_width");
 			potts->n_entropic_samples = cfg.lookup("n_entropic_samples");
+
+			potts->n_entropic_samples *= potts->size * potts->size;
+			potts->n_asamples = cfg.lookup("n_asamples");
 		}
 		catch(const SettingNotFoundException &nfex){
 			return(1);
@@ -80,6 +84,7 @@ int read_input(std::string file, POTTS_MODEL *potts){
 		// Collect specifics for Metropolis algorithm beta etc.
 		try{
 			potts->beta = cfg.lookup("beta");
+			potts->randomspin = cfg.lookup("randomspin");
 			potts->n_samples = cfg.lookup("n_samples");
 		}
 		catch(const SettingNotFoundException &nfex){
