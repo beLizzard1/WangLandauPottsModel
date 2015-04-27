@@ -21,6 +21,9 @@ void POTTS_MODEL::wang_landau(){
 
     // Use a Mersenne Prime Twister Random Number Generator
     std::uniform_int_distribution<int> distribution(1,n_q);
+    k = distribution(generator);
+
+    interfacepoint = floor(size/2);
 
     if(coldstart == true){
         // Set everything to a random q value
@@ -61,7 +64,7 @@ void POTTS_MODEL::wang_landau(){
     cur_a = a0;
 
     aguess = new double[n_asamples];
-    
+
     aguess[0] = cur_a;
 
     std::cout << "Gets to n_asamples nested for loop" << std::endl;
@@ -80,7 +83,7 @@ void POTTS_MODEL::wang_landau(){
       } else {
 		      aguess[i] = aguess[i-1] + (12 / ((4 * target_width) + (target_width * target_width))) * estar_avg;
       }
-      std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
+    //   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
       cur_a = aguess[i];
 	}
 

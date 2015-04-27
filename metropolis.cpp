@@ -13,6 +13,7 @@
 #include "potts.h"
 
 void POTTS_MODEL::metropolis(){
+
     grid = new unsigned int *[size]; // 2D array for ease of use
     for(unsigned int i = 0; i < size; i++){
         grid[i] = new unsigned int [size];
@@ -47,6 +48,9 @@ void POTTS_MODEL::metropolis(){
     }
     //std::cout << "Program Gets To JUST BEFORE THERMALISATION" << std::endl;
     // A Metropolis Algorithm needs Thermalising.
+    
+	
+
     acceptance = 0;
     n_therm *= (size * size);
     if(randomspin == true){
@@ -54,7 +58,7 @@ void POTTS_MODEL::metropolis(){
             metropolis_update();
         }
     } else {
-        for(unsigned int n = 0; n < n_therm; n++){
+        for(unsigned int n = 1; n < n_therm; n++){
             unsigned int y = n % size;
             unsigned int x = (n % (size*size)) / size;
             smooth_metropolis_update(x,y);

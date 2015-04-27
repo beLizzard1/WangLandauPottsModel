@@ -9,9 +9,13 @@ class POTTS_MODEL{
 	public:
 		POTTS_MODEL(); // Constructor
 		~POTTS_MODEL(); // Destructor
-		bool wanglandau, coldstart; // Type of Simulation to run
+		bool wanglandau, coldstart;
+		bool interface = false; // Type of Simulation to run
 		unsigned int size; // Grid Length
 		unsigned int n_q; // Number of Possible q states
+
+		unsigned int interfacepoint;
+		unsigned int k;
 
 		// Metropolis Algorithm Parameters
 		double beta;

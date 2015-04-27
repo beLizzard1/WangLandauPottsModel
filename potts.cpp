@@ -45,21 +45,40 @@ double POTTS_MODEL::energycalc(){
 
     for(unsigned int j = 0; j < size; j++){
       for(unsigned int i = 0; i < size; i++){
-        if(grid[i][j] == grid[(i+1)%size][j]){
-          energy++;
-        }
+          if(interface == false){
+              if(grid[i][j] == grid[(i+1)%size][j]){
+                  energy++;
+              }
+          } else {
+              if( i == interfacepoint){
+                  if(grid[i][j] == (grid[i][(j+1)%size]+k)%n_q){
+                      energy++;
+                  }
+              } else {
+                  if(grid[i][j] == grid[i][(j+1)%size]){
+                      energy++;
+                  }
+              }
+          }
 
-        if(grid[i][j] == grid[i][(j+1)%size]){
-          energy++;
-        }
+          // For neighbour below
 
-        //if(grid[i][j] == grid[i][(j-1)%size]){
-         // energy++;
-        //}
+          if(interface == false){
+              if(grid[i][j] == grid[i][(j+1)%size]){
+                  energy++;
+              }
+          } else {
+              if( i == interfacepoint){
+                  if(grid[i][j] == (grid[i][(j+1)%size]+k)%n_q){
+                      energy++;
+                  }
+              } else {
+                  if(grid[i][j] == grid[i][(j+1)%size]){
+                      energy++;
+                  }
+              }
+          }
 
-        //if(grid[i][j] == grid[(i-1)%size][j]){
-        //  energy++;
-        //}
       }
     }
     //energy *= -1 * ((n_q - 1) / (n_q));

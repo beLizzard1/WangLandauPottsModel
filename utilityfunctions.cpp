@@ -35,6 +35,16 @@ int read_input(std::string file, POTTS_MODEL *potts){
 		return(1);
 	}
 
+	try{
+		potts->interface = cfg.lookup("interface");
+	}
+	catch(const SettingNotFoundException &nfex){
+		std::cerr << "No 'interface' paramter found" << std::endl;
+		std::cerr << "Unrecoverable Error. Add a interface to the " << file << std::endl;
+		return(1);
+	}
+
+
 	// Collect type of simulation invarient parameters here
 	try{
 		potts->size = cfg.lookup("dim_grid");

@@ -15,7 +15,7 @@ do
 	cd ..
 done
 
-parallel --nice 17 -j6 --progress "echo {}; cd energy{}; ../potts.app param.cfg; cd ../" :::: target.list
+parallel --nice 17 -j4 --progress "echo {}; cd energy{}; ../potts.app param.cfg; cd ../" :::: target.list
 
 
 filelines=`cat $filename`
