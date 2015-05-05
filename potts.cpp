@@ -45,39 +45,23 @@ double POTTS_MODEL::energycalc(){
 
     for(unsigned int j = 0; j < size; j++){
       for(unsigned int i = 0; i < size; i++){
-          if(interface == false){
-              if(grid[i][j] == grid[(i+1)%size][j]){
+          if(interface == true && i == interfacepoint){
+              if(grid[i][j] == (grid[(i+1)%size][j]+k)%n_q){
                   energy++;
               }
           } else {
-              if( i == interfacepoint){
-                  if(grid[i][j] == (grid[i][(j+1)%size]+k)%n_q){
-                      energy++;
-                  }
-              } else {
-                  if(grid[i][j] == grid[i][(j+1)%size]){
-                      energy++;
-                  }
+              if(grid[i][j] == (grid[(i+1)%size][j])){
+                  energy++;
               }
           }
 
           // For neighbour below
 
-          if(interface == false){
-              if(grid[i][j] == grid[i][(j+1)%size]){
-                  energy++;
-              }
-          } else {
-              if( i == interfacepoint){
-                  if(grid[i][j] == (grid[i][(j+1)%size]+k)%n_q){
-                      energy++;
-                  }
-              } else {
-                  if(grid[i][j] == grid[i][(j+1)%size]){
-                      energy++;
-                  }
-              }
-          }
+	  if(grid[i][j] == grid[i][(j+1)%size]){
+		  energy++;
+	  }
+
+
 
       }
     }
@@ -88,8 +72,15 @@ double POTTS_MODEL::energycalc(){
 
 double POTTS_MODEL::energychange(unsigned int i, unsigned int j){
     double energy = 0.0;
-    if(grid[i][j] == grid[(i+1)%size][j]){
-        energy++;
+
+    if(interface == true && i == interfacepoint){
+	    if(grid[i][j] == (grid[(i+1)%size][j]+k)%n_q){
+		    energy++;
+	    }
+    } else {
+	    if(grid[i][j] == grid[(i+1)%size][j]){
+	        energy++;
+	    }
     }
     if(grid[i][j] == grid[i][(j+1)%size]){
         energy++;
