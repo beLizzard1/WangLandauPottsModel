@@ -92,14 +92,102 @@ void POTTS_MODEL::wang_landau(){
       }
     //   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
       cur_a = aguess[i];
+	grid = new unsigned int *[size]; // 2D array for ease of use
+	for(unsigned int i = 0; i < size; i++){
+		grid[i] = new unsigned int [size];
 	}
 
-    std::ofstream file;
-    file.open("an.dat");
-    for(unsigned int i = 0; i < n_asamples; i++){
-        file << aguess[i] << std::endl;
-    }
-    file.close();
+	// Use a Mersenne Prime Twister Random Number Generator
+	std::uniform_int_distribution<int> distribution(1,n_q);
+	k = distribution(generator);
+
+	interfacepoint = floor(size/2);
+
+	if(coldstart == true){
+		// Set everything to a random q value
+		unsigned int rand_q = distribution(generator);
+		for(unsigned int j = 0; j < size; j++){
+			for(unsigned int i = 0; i < size; i++){
+				grid[i][j] = rand_q;
+			}
+		}
+	} else {
+		// Set every point randomly :)
+		for(unsigned int j = 0; j < size; j++){
+			for(unsigned int i = 0; i < size; i++){
+				grid[i][j] = distribution(generator);
+			}
+		}
+	}
+
+	// Drive Energy into Target
+	std::cerr << "Starting to Force Energy" << std::endl;
+	bool t_interface = interface;
+	if(interface == true){
+		interface = false;
+		while(outsideenergyband()){
+			for(unsigned int j = 0; j < size; j++){
+				for(unsigned int i = 0; i < size; i++){
+					drivetotarget(i,j);
+				}
+			}
+		}
+	} else {
+		while(outsideenergyband()){
+			for(unsigned int j = 0; j < size; j++){
+				for(unsigned int i = 0; i < size; i++){
+					drivetotarget(i,j);
+				}
+			}
+
+		}
+	}
+	interface = t_interface;
+
+	std::cerr << "Finished Forcing Energy" << std::endl;
+
+	// Do Measurements
+
+	estar = new double[n_entropic_samples];
+	for(unsigned int i = 0; i < n_entropic_samples; i++){
+		wanglandau_update();
+		wanglandau_measurement(i);
+	}
+	double estar_avg = wanglandau_average(estar);
+
+	// Set a_0 in the aguess array to stop segfaults
+	cur_a = a0;
+
+	aguess = new double[n_asamples];
+
+	aguess[0] = cur_a;
+
+	std::cout << "Gets to n_asamples nested for loop" << std::endl;
+
+	// Loop around until n_asamples is reached
+	for(unsigned int i = 1; i < n_asamples; i++){
+		for(unsigned int j = 0; j < n_entropic_samples; j++){
+			wanglandau_update();
+			wanglandau_measurement(j);
+		}
+
+		estar_avg = wanglandau_average(estar);
+		//std::cout << estar_avg << std::endl;
+		if(n_q == 2){
+			aguess[i] = aguess[i-1] + (12 / (target_width * target_width)) * estar_avg;
+		} else {
+			aguess[i] = aguess[i-1] + (12 / ((4 * target_width) + (target_width * target_width))) * estar_avg;
+		}
+		//   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
+		cur_a = aguess[i];
+	}
+
+	std::ofstream file;
+	file.open("an.dat");
+	for(unsigned int i = 0; i < n_asamples; i++){
+		file << aguess[i] << std::endl;
+	}
+	file.close();
 
 
 }
@@ -132,28 +220,28 @@ void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 }
 
 void POTTS_MODEL::wanglandau_measurement(unsigned int k){
-  estar[k] = energycalc() - target_e; //Total on Lattice
-  //std::cout << estar[k] << std::endl;
+	estar[k] = energycalc() - target_e; //Total on Lattice
+	//std::cout << estar[k] << std::endl;
 }
 
 void POTTS_MODEL::wanglandau_update(){
-  std::uniform_int_distribution<unsigned int> distribution(0,size-1);
-  unsigned int x = distribution(generator);
-  unsigned int y = distribution(generator);
-  double H_old = energychange(x,y);
-  unsigned int old_q = grid[x][y];
+	std::uniform_int_distribution<unsigned int> distribution(0,size-1);
+	unsigned int x = distribution(generator);
+	unsigned int y = distribution(generator);
+	double H_old = energychange(x,y);
+	unsigned int old_q = grid[x][y];
 
-  //double H_old = energycalc();
-  std::uniform_int_distribution<unsigned int> qdistribution(1,n_q);
-  unsigned int new_q = qdistribution(generator);
-  grid[x][y] = new_q;
-  double H_new = energychange(x,y);
-  double delta = H_new - H_old; // This looks weird should be
-  //double delta = H_new - target_e;
+	//double H_old = energycalc();
+	std::uniform_int_distribution<unsigned int> qdistribution(1,n_q);
+	unsigned int new_q = qdistribution(generator);
+	grid[x][y] = new_q;
+	double H_new = energychange(x,y);
+	double delta = H_new - H_old; // This looks weird should be
+	//double delta = H_new - target_e;
 
-  if( outsideenergyband() == 1 ){
-    grid[x][y] = old_q;
-    } else {
+	if( outsideenergyband() == 1 ){
+		grid[x][y] = old_q;
+	} else {
 		std::uniform_real_distribution<double> pdistribution(0,1);
 		double rand = pdistribution(generator);
 		if (delta < 0.0){
@@ -171,40 +259,40 @@ void POTTS_MODEL::wanglandau_update(){
 }
 
 double POTTS_MODEL::wanglandau_average(double *array){
-    double average = 0.0;
-    for(unsigned int i = 0; i < n_entropic_samples; i++){
-        average += array[i];
-    }
-    average /= n_entropic_samples;
-    return(average);
+	double average = 0.0;
+	for(unsigned int i = 0; i < n_entropic_samples; i++){
+		average += array[i];
+	}
+	average /= n_entropic_samples;
+	return(average);
 }
 
 double POTTS_MODEL::wanglandau_error(double *array, double average){
-  double *bin, *jackbins;
-  unsigned int numbins = 100;
-  bin = new double[numbins];
-  jackbins = new double[numbins];
-  unsigned int slice = n_samples / numbins;
-  double sumbins = 0.0;
-  for(unsigned int l = 0; l < numbins; l++){
-    bin[l] = 0.0;
-    for(unsigned int k = 0; k < slice; k++){
-      bin[l] += array[(l * slice)+k];
-    }
-    bin[l] /= slice;
-    sumbins += bin[l];
-  }
-  // Forming Bins
-  for(unsigned int l = 0; l < numbins; l++){
-    jackbins[l] = (sumbins - bin[l]) / (numbins - 1.0);
-  }
-  double error = 0.0;
-  for(unsigned int l = 0; l < numbins; l++){
-    error += (average - jackbins[l]) * (average - jackbins[l]);
-  }
-  error *= (numbins - 1.0) / (double)numbins;
-  error = sqrt(error);
-  return(error);
+	double *bin, *jackbins;
+	unsigned int numbins = 100;
+	bin = new double[numbins];
+	jackbins = new double[numbins];
+	unsigned int slice = n_samples / numbins;
+	double sumbins = 0.0;
+	for(unsigned int l = 0; l < numbins; l++){
+		bin[l] = 0.0;
+		for(unsigned int k = 0; k < slice; k++){
+			bin[l] += array[(l * slice)+k];
+		}
+		bin[l] /= slice;
+		sumbins += bin[l];
+	}
+	// Forming Bins
+	for(unsigned int l = 0; l < numbins; l++){
+		jackbins[l] = (sumbins - bin[l]) / (numbins - 1.0);
+	}
+	double error = 0.0;
+	for(unsigned int l = 0; l < numbins; l++){
+		error += (average - jackbins[l]) * (average - jackbins[l]);
+	}
+	error *= (numbins - 1.0) / (double)numbins;
+	error = sqrt(error);
+	return(error);
 }
 
 
@@ -220,22 +308,22 @@ int POTTS_MODEL::outsideenergyband(){
 }
 
 void POTTS_MODEL::drivetotarget(unsigned int i, unsigned int j){
-  unsigned int q_before = grid[i][j];
-  double energy_before = energycalc();
+	unsigned int q_before = grid[i][j];
+	double energy_before = energycalc();
 
-  unsigned int rand_q;
-  std::uniform_int_distribution<unsigned int> qdistribution(1,n_q);
-  rand_q = qdistribution(generator);
-  grid[i][j] = rand_q;
-  double energy_after = energycalc();
+	unsigned int rand_q;
+	std::uniform_int_distribution<unsigned int> qdistribution(1,n_q);
+	rand_q = qdistribution(generator);
+	grid[i][j] = rand_q;
+	double energy_after = energycalc();
 
-  if( abs(energy_before - target_e) < abs(energy_after - target_e) ){
-    grid[i][j] = q_before;
-    //std::cout << "Stuck with Original Q" << std::endl;
-  } else {
-    grid[i][j] = rand_q;
-    //std::cout << "Gone with Random Q of " << rand_q << std::endl;
-  }
+	if( abs(energy_before - target_e) < abs(energy_after - target_e) ){
+		grid[i][j] = q_before;
+		//std::cout << "Stuck with Original Q" << std::endl;
+	} else {
+		grid[i][j] = rand_q;
+		//std::cout << "Gone with Random Q of " << rand_q << std::endl;
+	}
 
-  //std::cout << energycalc() << std::endl;
+	//std::cout << energycalc() << std::endl;
 }
