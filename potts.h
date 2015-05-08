@@ -49,6 +49,7 @@ class POTTS_MODEL{
 		void smooth_metropolis_update(unsigned int, unsigned int);
 		int outsideenergyband();
 		void wanglandau_update();
+		void smooth_wanglandau_update(unsigned int, unsigned int);
 		void drivetotarget(unsigned int, unsigned int);
 		// Measurement for Update
 		void metropolis_measurement(unsigned int);

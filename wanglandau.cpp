@@ -71,10 +71,17 @@ void POTTS_MODEL::wang_landau(){
 
     // Loop around until n_asamples is reached
   for(unsigned int i = 1; i < n_asamples; i++){
-	   for(unsigned int j = 0; j < n_entropic_samples; j++){
-           wanglandau_update();
-           wanglandau_measurement(j);
-	   }
+
+      for(unsigned int n = 1; n < n_entropic_samples; n++){
+          unsigned int y = n % size;
+          unsigned int x = (n % (size*size)) / size;
+          if(x == interfacepoint){
+              grid[x][y] = (grid[x-1][y]+k)%n_q;
+          } else {
+                  smooth_wanglandau_update(x,y);
+          }
+          wanglandau_measurement(n);
+      }
 
 	    estar_avg = wanglandau_average(estar);
       //std::cout << estar_avg << std::endl;
@@ -94,6 +101,33 @@ void POTTS_MODEL::wang_landau(){
     }
     file.close();
 
+
+}
+
+void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
+    std::uniform_int_distribution<unsigned int> distribution(1,n_q);
+    double energy_pre = energychange(x,y);
+    unsigned int old_q = grid[x][y];
+
+    unsigned int new_q = distribution(generator);
+    grid[x][y] = new_q;
+    double energy_post = energychange(x,y);
+
+    std::uniform_real_distribution<double> pdistribution(0,1);
+    double delta = energy_post - energy_pre;
+    double rand = pdistribution(generator);
+
+    if( delta < 0.0 ){
+        grid[x][y] = new_q;
+        acceptance++;
+    } else {
+        if(exp(-1 * beta * delta) > rand){
+            grid[x][y] = new_q;
+            acceptance++;
+        } else {
+            grid[x][y] = old_q;
+        }
+    }
 
 }
 

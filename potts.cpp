@@ -61,8 +61,6 @@ double POTTS_MODEL::energycalc(){
 		  energy++;
 	  }
 
-
-
       }
     }
     //energy *= -1 * ((n_q - 1) / (n_q));
