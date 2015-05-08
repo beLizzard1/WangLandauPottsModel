@@ -92,104 +92,14 @@ void POTTS_MODEL::wang_landau(){
       }
     //   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
       cur_a = aguess[i];
-	grid = new unsigned int *[size]; // 2D array for ease of use
-	for(unsigned int i = 0; i < size; i++){
-		grid[i] = new unsigned int [size];
-	}
-
-	// Use a Mersenne Prime Twister Random Number Generator
-	std::uniform_int_distribution<int> distribution(1,n_q);
-	k = distribution(generator);
-
-	interfacepoint = floor(size/2);
-
-	if(coldstart == true){
-		// Set everything to a random q value
-		unsigned int rand_q = distribution(generator);
-		for(unsigned int j = 0; j < size; j++){
-			for(unsigned int i = 0; i < size; i++){
-				grid[i][j] = rand_q;
-			}
-		}
-	} else {
-		// Set every point randomly :)
-		for(unsigned int j = 0; j < size; j++){
-			for(unsigned int i = 0; i < size; i++){
-				grid[i][j] = distribution(generator);
-			}
-		}
-	}
-
-	// Drive Energy into Target
-	std::cerr << "Starting to Force Energy" << std::endl;
-	bool t_interface = interface;
-	if(interface == true){
-		interface = false;
-		while(outsideenergyband()){
-			for(unsigned int j = 0; j < size; j++){
-				for(unsigned int i = 0; i < size; i++){
-					drivetotarget(i,j);
-				}
-			}
-		}
-	} else {
-		while(outsideenergyband()){
-			for(unsigned int j = 0; j < size; j++){
-				for(unsigned int i = 0; i < size; i++){
-					drivetotarget(i,j);
-				}
-			}
-
-		}
-	}
-	interface = t_interface;
-
-	std::cerr << "Finished Forcing Energy" << std::endl;
-
-	// Do Measurements
-
-	estar = new double[n_entropic_samples];
-	for(unsigned int i = 0; i < n_entropic_samples; i++){
-		wanglandau_update();
-		wanglandau_measurement(i);
-	}
-	double estar_avg = wanglandau_average(estar);
-
-	// Set a_0 in the aguess array to stop segfaults
-	cur_a = a0;
-
-	aguess = new double[n_asamples];
-
-	aguess[0] = cur_a;
-
-	std::cout << "Gets to n_asamples nested for loop" << std::endl;
-
-	// Loop around until n_asamples is reached
-	for(unsigned int i = 1; i < n_asamples; i++){
-		for(unsigned int j = 0; j < n_entropic_samples; j++){
-			wanglandau_update();
-			wanglandau_measurement(j);
-		}
-
-		estar_avg = wanglandau_average(estar);
-		//std::cout << estar_avg << std::endl;
-		if(n_q == 2){
-			aguess[i] = aguess[i-1] + (12 / (target_width * target_width)) * estar_avg;
-		} else {
-			aguess[i] = aguess[i-1] + (12 / ((4 * target_width) + (target_width * target_width))) * estar_avg;
-		}
-		//   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
-		cur_a = aguess[i];
-	}
-
+  }
+	
 	std::ofstream file;
 	file.open("an.dat");
 	for(unsigned int i = 0; i < n_asamples; i++){
 		file << aguess[i] << std::endl;
 	}
 	file.close();
-
-
 }
 
 void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
