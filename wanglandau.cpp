@@ -44,22 +44,10 @@ void POTTS_MODEL::wang_landau(){
 
 	// Drive Energy into Target
 
-	if(interface == true){
-		interface == false;
-		while(outsideenergyband()){
-			for(unsigned int j = 0; j < size; j++){
-				for(unsigned int i = 0; i < size; i++){
-					drivetotarget(i,j);
-				}
-			}
-		}
-		interface == true;
-	} else {
-		while(outsideenergyband()){
-			for(unsigned int j = 0; j < size; j++){
-				for(unsigned int i = 0; i < size; i++){
-					drivetotarget(i,j);
-				}
+	while(outsideenergyband()){
+		for(unsigned int j = 0; j < size; j++){
+			for(unsigned int i = 0; i < size; i++){
+				drivetotarget(i,j);
 			}
 		}
 	}
@@ -115,7 +103,7 @@ void POTTS_MODEL::wang_landau(){
 	std::ofstream file;
 	file.open("an.dat");
 	for(unsigned int i = 0; i < n_asamples; i++){
-		file << aguess[i] << wanglandau_error(aguess,estar_avg) << std::endl;
+		file << aguess[i] << " " << wanglandau_error(aguess,estar_avg) << std::endl;
 	}
 	file.close();
 }
@@ -133,18 +121,21 @@ void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 	double delta = energy_post - energy_pre;
 	double rand = pdistribution(generator);
 
-	if( delta < 0.0 ){
-		grid[x][y] = new_q;
-		acceptance++;
+	if( outsideenergyband() == 1){
+		grid[x][y] = old_q;
 	} else {
-		if(exp(-1 * beta * delta) > rand){
+		if( delta < 0.0 ){
 			grid[x][y] = new_q;
 			acceptance++;
 		} else {
-			grid[x][y] = old_q;
+			if(exp(-1 * beta * delta) > rand){
+				grid[x][y] = new_q;
+				acceptance++;
+			} else {
+				grid[x][y] = old_q;
+			}
 		}
 	}
-
 }
 
 void POTTS_MODEL::wanglandau_measurement(unsigned int k){
@@ -200,7 +191,7 @@ double POTTS_MODEL::wanglandau_error(double *array, double average){
 	unsigned int numbins = 100;
 	bin = new double[numbins];
 	jackbins = new double[numbins];
-	unsigned int slice = n_samples / numbins;
+	unsigned int slice = n_asamples / numbins;
 	double sumbins = 0.0;
 	for(unsigned int l = 0; l < numbins; l++){
 		bin[l] = 0.0;
