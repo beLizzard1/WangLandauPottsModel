@@ -56,10 +56,10 @@ void POTTS_MODEL::wang_landau(){
 
 	estar = new double[n_entropic_samples];
 	for(unsigned int i = 0; i < n_entropic_samples; i++){
-		unsigned int y = n%size;
-		unsigned int x = (n % (size*size))/size;
+		unsigned int y = i%size;
+		unsigned int x = (i % (size*size))/size;
 		if(x == interfacepoint && interface == true){
-			grid[x][y] = (grid[x-1][y]+k)%n_q
+			grid[x][y] = (grid[x-1][y]+k)%n_q;
 		} else {
 			smooth_wanglandau_update(x,y);
 		}
