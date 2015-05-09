@@ -115,7 +115,7 @@ void POTTS_MODEL::wang_landau(){
 	std::ofstream file;
 	file.open("an.dat");
 	for(unsigned int i = 0; i < n_asamples; i++){
-		file << aguess[i] << std::endl;
+		file << aguess[i] << wanglandau_error(aguess,estar_avg) << std::endl;
 	}
 	file.close();
 }
