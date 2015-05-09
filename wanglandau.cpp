@@ -30,14 +30,24 @@ void POTTS_MODEL::wang_landau(){
 		unsigned int rand_q = distribution(generator);
 		for(unsigned int j = 0; j < size; j++){
 			for(unsigned int i = 0; i < size; i++){
-				grid[i][j] = rand_q;
+				unsigned int y = i % size;
+				unsigned int x = (i % (size*size))/size;
+				if(x == interfacepoint && interface == true){
+					grid[x][y] = (grid[x-1][y]+k)%n_q;
+				} else {
+					grid[i][j] = rand_q;
+				}
 			}
 		}
 	} else {
 		// Set every point randomly :)
 		for(unsigned int j = 0; j < size; j++){
 			for(unsigned int i = 0; i < size; i++){
-				grid[i][j] = distribution(generator);
+				if(i == interfacepoint && interface == true){
+					grid[i][j] = (grid[i-1][j]+k)%n_q;
+				} else {
+					grid[i][j] = distribution(generator);
+				}
 			}
 		}
 	}
@@ -73,11 +83,10 @@ void POTTS_MODEL::wang_landau(){
 
 	aguess[0] = cur_a;
 
-	std::cout << "Gets to n_asamples nested for loop" << std::endl;
+	//std::cout << "Gets to n_asamples nested for loop" << std::endl;
 
 	// Loop around until n_asamples is reached
 	for(unsigned int i = 1; i < n_asamples; i++){
-
 		for(unsigned int n = 1; n < n_entropic_samples; n++){
 			unsigned int y = n % size;
 			unsigned int x = (n % (size*size)) / size;
@@ -98,6 +107,7 @@ void POTTS_MODEL::wang_landau(){
 		}
 		//   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
 		cur_a = aguess[i];
+		//std::cout << cur_a << std::endl;
 	}
 
 	std::ofstream file;
@@ -110,25 +120,27 @@ void POTTS_MODEL::wang_landau(){
 
 void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 	std::uniform_int_distribution<unsigned int> distribution(1,n_q);
-	double energy_pre = energychange(x,y);
+	double H_old = energychange(x,y);
+	H_old = energychange();
 	unsigned int old_q = grid[x][y];
 
 	unsigned int new_q = distribution(generator);
 	grid[x][y] = new_q;
-	double energy_post = energychange(x,y);
-
-	std::uniform_real_distribution<double> pdistribution(0,1);
-	double delta = energy_post - energy_pre;
-	double rand = pdistribution(generator);
+	double H_new = energychange(x,y);
+	H_new = energychange();
+	double delta = H_new - H_old;
 
 	if( outsideenergyband() == 1){
 		grid[x][y] = old_q;
 	} else {
+		std::uniform_real_distribution<double> pdistribution(0,1);
+		double rand = pdistribution(generator);
+
 		if( delta < 0.0 ){
 			grid[x][y] = new_q;
 			acceptance++;
 		} else {
-			if(exp(-1 * beta * delta) > rand){
+			if(exp(-1 * cur_a * delta) > rand){
 				grid[x][y] = new_q;
 				acceptance++;
 			} else {
