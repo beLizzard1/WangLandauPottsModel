@@ -44,14 +44,25 @@ void POTTS_MODEL::wang_landau(){
 
 	// Drive Energy into Target
 
-	while(outsideenergyband()){
-		for(unsigned int j = 0; j < size; j++){
-			for(unsigned int i = 0; i < size; i++){
-				drivetotarget(i,j);
+	if(interface == true){
+		interface == false;
+		while(outsideenergyband()){
+			for(unsigned int j = 0; j < size; j++){
+				for(unsigned int i = 0; i < size; i++){
+					drivetotarget(i,j);
+				}
+			}
+		}
+		interface == true;
+	} else {
+		while(outsideenergyband()){
+			for(unsigned int j = 0; j < size; j++){
+				for(unsigned int i = 0; i < size; i++){
+					drivetotarget(i,j);
+				}
 			}
 		}
 	}
-
 	// Do Measurements
 
 	estar = new double[n_entropic_samples];
