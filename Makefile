@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-O3 -std=gnu++11 -pedantic -Wall -Wextra
 LDFLAGS=-lm -lconfig++ 
-INCLUDES=-I/usr/local/include -I. -I websocketpp/ 
+INCLUDES=-I/usr/local/include -I.
 
 BinaryName=potts.app
 

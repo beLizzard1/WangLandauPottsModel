@@ -121,13 +121,11 @@ void POTTS_MODEL::wang_landau(){
 void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 	std::uniform_int_distribution<unsigned int> distribution(1,n_q);
 	double H_old = energychange(x,y);
-	H_old = energychange();
 	unsigned int old_q = grid[x][y];
 
 	unsigned int new_q = distribution(generator);
 	grid[x][y] = new_q;
 	double H_new = energychange(x,y);
-	H_new = energychange();
 	double delta = H_new - H_old;
 
 	if( outsideenergyband() == 1){
