@@ -49,11 +49,9 @@ double POTTS_MODEL::energycalc(){
 				energy++;
 			}
 			// For neighbour below
-
 			if(grid[i][j] == grid[i][(j+1)%size]){
 				energy++;
 			}
-
 		}
 	}
 	//energy *= -1 * ((n_q - 1) / (n_q));

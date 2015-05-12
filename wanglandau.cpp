@@ -22,6 +22,7 @@ void POTTS_MODEL::wang_landau(){
 	// Use a Mersenne Prime Twister Random Number Generator
 	std::uniform_int_distribution<int> distribution(1,n_q);
 	k = distribution(generator);
+	k = 1;
 
 	interfacepoint = floor(size/2);
 
@@ -33,7 +34,13 @@ void POTTS_MODEL::wang_landau(){
 				unsigned int y = i % size;
 				unsigned int x = (i % (size*size))/size;
 				if(x == interfacepoint && interface == true){
-					grid[x][y] = (grid[x-1][y]+k)%n_q;
+					// This is idiotic of me. State 0 isn't a state it's empty.
+					// So need to catch that.
+					if( (grid[x-1][y]+k)%n_q == 0){
+						grid[x][y] = 1;
+					} else {
+						grid[x][y] = (grid[x-1][y]+k)%n_q;
+					}
 				} else {
 					grid[i][j] = rand_q;
 				}
@@ -44,7 +51,14 @@ void POTTS_MODEL::wang_landau(){
 		for(unsigned int j = 0; j < size; j++){
 			for(unsigned int i = 0; i < size; i++){
 				if(i == interfacepoint && interface == true){
-					grid[i][j] = (grid[i-1][j]+k)%n_q;
+				// This is idiotic of me. State 0 isn't a state it's empty.
+	                        // So need to catch that.
+                                        if( (grid[i-1][j]+k)%n_q == 0){
+                                                grid[i][j] = 1;
+                                        } else {
+                                                grid[i][j] = (grid[i-1][j]+k)%n_q;
+                                        }
+	
 				} else {
 					grid[i][j] = distribution(generator);
 				}
@@ -68,7 +82,13 @@ void POTTS_MODEL::wang_landau(){
 		unsigned int y = i%size;
 		unsigned int x = (i % (size*size))/size;
 		if(x == interfacepoint && interface == true){
-			grid[x][y] = (grid[x-1][y]+k)%n_q;
+		// This is idiotic of me. State 0 isn't a state it's empty.
+                                        // So need to catch that.
+                                        if( (grid[x-1][y]+k)%n_q == 0){
+                                                grid[x][y] = 1;
+                                        } else {
+                                                grid[x][y] = (grid[x-1][y]+k)%n_q;
+                                        }
 		} else {
 			smooth_wanglandau_update(x,y);
 		}
@@ -87,11 +107,18 @@ void POTTS_MODEL::wang_landau(){
 
 	// Loop around until n_asamples is reached
 	for(unsigned int i = 1; i < n_asamples; i++){
-		for(unsigned int n = 1; n < n_entropic_samples; n++){
+		for(unsigned int n = 0; n < n_entropic_samples; n++){
 			unsigned int y = n % size;
 			unsigned int x = (n % (size*size)) / size;
 			if(x == interfacepoint && interface == true){
-				grid[x][y] = (grid[x-1][y]+k)%n_q;
+			// This is idiotic of me. State 0 isn't a state it's empty.
+                                        // So need to catch that.
+                                        if( (grid[x-1][y]+k)%n_q == 0){
+                                                grid[x][y] = 1;
+                                        } else {
+                                                grid[x][y] = (grid[x-1][y]+k)%n_q;
+                                        }
+
 			} else {
 				smooth_wanglandau_update(x,y);
 			}
@@ -105,15 +132,14 @@ void POTTS_MODEL::wang_landau(){
 		} else {
 			aguess[i] = aguess[i-1] + (12 / ((4 * target_width) + (target_width * target_width))) * estar_avg;
 		}
-		//   std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
+		//std::cout << (i/(double)n_asamples)*100 << "%" << std::endl;
 		cur_a = aguess[i];
-		//std::cout << cur_a << std::endl;
 	}
 
 	std::ofstream file;
 	file.open("an.dat");
 	for(unsigned int i = 0; i < n_asamples; i++){
-		file << aguess[i] << " " << wanglandau_error(aguess,estar_avg) << std::endl;
+		file << aguess[i] << std::endl;
 	}
 	file.close();
 }
@@ -125,15 +151,17 @@ void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 
 	unsigned int new_q = distribution(generator);
 	grid[x][y] = new_q;
+
 	double H_new = energychange(x,y);
 	double delta = H_new - H_old;
 
 	if( outsideenergyband() == 1){
 		grid[x][y] = old_q;
+		//std::cout << "Outside Band: Ignoring" << std::endl;
 	} else {
+		//std::cout << "Inside Band: Running Metropolis" << std::endl;
 		std::uniform_real_distribution<double> pdistribution(0,1);
 		double rand = pdistribution(generator);
-
 		if( delta < 0.0 ){
 			grid[x][y] = new_q;
 			acceptance++;
@@ -149,8 +177,8 @@ void POTTS_MODEL::smooth_wanglandau_update(unsigned int x, unsigned int y){
 }
 
 void POTTS_MODEL::wanglandau_measurement(unsigned int k){
-	estar[k] = energycalc() - target_e; //Total on Lattice
-	//std::cout << estar[k] << std::endl;
+	estar[k] = energycalc()- target_e; //Total on Lattice less target
+	//std::cout << energycalc() << std::endl;
 }
 
 void POTTS_MODEL::wanglandau_update(){
@@ -158,6 +186,7 @@ void POTTS_MODEL::wanglandau_update(){
 	unsigned int x = distribution(generator);
 	unsigned int y = distribution(generator);
 	double H_old = energychange(x,y);
+	H_old = energycalc();
 	unsigned int old_q = grid[x][y];
 
 	//double H_old = energycalc();
@@ -165,6 +194,7 @@ void POTTS_MODEL::wanglandau_update(){
 	unsigned int new_q = qdistribution(generator);
 	grid[x][y] = new_q;
 	double H_new = energychange(x,y);
+	H_new = energycalc();
 	double delta = H_new - H_old; // This looks weird should be
 	//double delta = H_new - target_e;
 
@@ -193,6 +223,7 @@ double POTTS_MODEL::wanglandau_average(double *array){
 		average += array[i];
 	}
 	average /= n_entropic_samples;
+	//std::cout << average << std::endl;
 	return(average);
 }
 
@@ -232,8 +263,9 @@ int POTTS_MODEL::outsideenergyband(){
 	double energy = energycalc();
 	if( energy < target_ub && energy > target_lb){
 		return(0);
+	} else {
+		return(1);
 	}
-	return(1);
 }
 
 void POTTS_MODEL::drivetotarget(unsigned int i, unsigned int j){
