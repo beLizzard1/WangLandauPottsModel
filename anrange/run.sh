@@ -5,8 +5,8 @@ rm Q*.dat
 filename='target.list'
 filelines=`cat $filename`
 
-gridsize=16
-interface=false
+gridsize=18
+interface=true
 
 
 sed -i '/interface\s=\s.*/c\interface = '$interface'' param.cfg
@@ -26,7 +26,7 @@ do
 		cd ..
 	done
 	
-	parallel -j8 --eta "cd energy{}; ../potts.app param.cfg; cd ../" :::: target.list
+	parallel -j16 --eta "cd energy{}; ../potts.app param.cfg; cd ../" :::: target.list
 
 	filelines=`cat $filename`
 	for i in $filelines
